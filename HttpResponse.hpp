@@ -1,0 +1,39 @@
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   HttpResponse.hpp                                   :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: romukena <romukena@student.42.fr>          +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2026/04/14 15:48:13 by romukena          #+#    #+#             */
+/*   Updated: 2026/04/14 15:58:47 by romukena         ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
+
+#pragma once
+#include <vector>
+#include <iostream>
+#include <map>
+
+/*
+HTTP/1.1 200 OK\r\n          ← status line
+Content-Type: text/html\r\n  ← headers
+Content-Length: 42\r\n       |
+\r\n
+<html>...</html>             ← body
+*/
+
+class HttpResponse
+{
+private:
+	int			_code;
+	std::string	_version;
+	std::string	_message;
+	std::vector<unsigned char>			_body;
+	std::map<std::string, std::string>	_headers;
+public:
+	HttpResponse();
+	~HttpResponse();
+};
+
+
