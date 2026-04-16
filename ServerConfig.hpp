@@ -6,7 +6,7 @@
 /*   By: romukena <romukena@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/04/14 15:01:30 by romukena          #+#    #+#             */
-/*   Updated: 2026/04/16 13:39:17 by romukena         ###   ########.fr       */
+/*   Updated: 2026/04/16 13:45:59 by romukena         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -32,5 +32,11 @@ private:
 	ServerConfig();
 	~ServerConfig();
 	unsigned int getPort() const;
+	std::vector<std::string> getServerName() const;
+	std::string getRoot() const;
+	std::string getIndex() const;
+	size_t getSizeClient() const;
+	std::map<int, std::string> getErrorPage() const;
+	std::vector<LocationConfig> getLocations() const;
 	
 };
