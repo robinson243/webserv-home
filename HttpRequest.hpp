@@ -6,15 +6,15 @@
 /*   By: romukena <romukena@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/04/14 15:16:52 by romukena          #+#    #+#             */
-/*   Updated: 2026/04/16 14:08:50 by romukena         ###   ########.fr       */
+/*   Updated: 2026/04/16 17:33:02 by romukena         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #pragma once
 
+#include <iostream>
 #include <map>
 #include <vector>
-#include <iostream>
 
 /*
 ┌─────────────────────────────────────────────┐
@@ -23,7 +23,7 @@
 │   │           │                │            │
 │ method       uri           version          │
 └─────────────────────────────────────────────┘
-                    \r\n
+					\r\n
 ┌─────────────────────────────────────────────┐
 │               HEADERS                       │
 │  Host: localhost:8080                       │
@@ -31,7 +31,7 @@
 │  Content-Length: 29                         │
 │  Connection: keep-alive                     │
 └─────────────────────────────────────────────┘
-                \r\n\r\n  ← ligne vide = séparateur OBLIGATOIRE
+				\r\n\r\n  ← ligne vide = séparateur OBLIGATOIRE
 ┌─────────────────────────────────────────────┐
 │                 BODY                        │
 │  Bonjour, voici mon fichier !               │
@@ -39,19 +39,23 @@
 └─────────────────────────────────────────────┘
 */
 
-class HttpRequest
-{
-private:
-	std::vector<unsigned char>			_body;
-	bool								_isValid;
-	std::map<std::string, std::string>	_headers;
-	std::map<std::string, std::string>	_requestLine;
-public:
-	HttpRequest(/* args */);
+class HttpRequest {
+  private:
+	std::vector<unsigned char> _body;
+	bool _isValid;
+	std::map<std::string, std::string> _headers;
+	std::map<std::string, std::string> _requestLine;
+
+  public:
+	HttpRequest();
 	~HttpRequest();
 	std::vector<unsigned char> getBody() const;
 	bool getValid() const;
 	std::map<std::string, std::string> getHeaders() const;
 	std::map<std::string, std::string> getRequest() const;
-	
+
+	void addBody(std::string &element);
+	void makeTrue();
+	void addHeaders(std::string &key, std::string &element);
+	void addRequest(std::string &key, std::string &element);
 };
