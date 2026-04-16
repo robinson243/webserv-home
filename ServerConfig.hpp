@@ -6,7 +6,7 @@
 /*   By: romukena <romukena@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/04/14 15:01:30 by romukena          #+#    #+#             */
-/*   Updated: 2026/04/14 15:44:47 by romukena         ###   ########.fr       */
+/*   Updated: 2026/04/16 13:39:17 by romukena         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -31,4 +31,6 @@ private:
   public:
 	ServerConfig();
 	~ServerConfig();
+	unsigned int getPort() const;
+	
 };
