@@ -6,7 +6,7 @@
 /*   By: romukena <romukena@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/04/14 15:48:13 by romukena          #+#    #+#             */
-/*   Updated: 2026/04/14 15:58:47 by romukena         ###   ########.fr       */
+/*   Updated: 2026/04/16 13:55:14 by romukena         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -34,6 +34,11 @@ private:
 public:
 	HttpResponse();
 	~HttpResponse();
+	int getCode() const;
+	std::string getVersion() const;
+	std::string getMessage() const;
+	std::vector<unsigned char> getBody() const;
+	std::map<std::string, std::string> getHeaders() const;
 };
 
 
