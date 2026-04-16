@@ -6,7 +6,13 @@
 /*   By: ydembele <ydembele@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/04/16 13:40:39 by ydembele          #+#    #+#             */
-/*   Updated: 2026/04/16 13:40:40 by ydembele         ###   ########.fr       */
+/*   Updated: 2026/04/16 13:48:20 by ydembele         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
+#include "ServerConfig.hpp"
+
+ServerConfig::ServerConfig()
+{
+    _port = 0;
+}
