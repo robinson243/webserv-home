@@ -6,7 +6,7 @@
 /*   By: romukena <romukena@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/04/14 15:48:13 by romukena          #+#    #+#             */
-/*   Updated: 2026/04/16 18:08:11 by romukena         ###   ########.fr       */
+/*   Updated: 2026/04/17 16:10:18 by romukena         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -41,10 +41,10 @@ public:
 	std::map<std::string, std::string> getHeaders() const;
 
 	void addCode(int code);
-	void addversion(std::string &e);
+	void addVersion(std::string &e);
 	void addMessage(std::string &e);
 	void addBodyResponse(std::string &e);
-	void addHeadersResponse(std::string &e);
+	void addHeadersResponse(std::string &key, std::string &e);
 };
 
 
