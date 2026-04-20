@@ -6,7 +6,7 @@
 /*   By: ydembele <ydembele@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/04/16 13:40:39 by ydembele          #+#    #+#             */
-/*   Updated: 2026/04/16 14:43:17 by ydembele         ###   ########.fr       */
+/*   Updated: 2026/04/20 21:50:50 by ydembele         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -16,11 +16,13 @@
 #include <fstream>
 #include <array>
 #include <string>
+#include "LocationConfig.hpp"
 
 ServerConfig::ServerConfig()
 {
 	_root = "";
 	_clientMaxBodySize = std::numeric_limits<std::size_t>::max();
+	_hasMaxSize = false;
 }
 
 ServerConfig &ServerConfig::operator=(ServerConfig &other)
@@ -56,15 +58,17 @@ std::vector<ServerConfig> pars(const std::string &file)
 	std::vector<ServerConfig> servers;
 	std::vector<std::string> tokens = tokenize(content);
 
-	std::vector<std::string>::const_iterator it = tokens.begin();
-
+	std::vector<std::string>::iterator it = tokens.begin();
+	if (it == tokens.end() || *it != "server")
+    throw std::runtime_error("Config must start with server");
 	while (it != tokens.end())
 	{
     if (*it != "server")
-        throw std::runtime_error("Expected 'server'");
+        throw std::runtime_error("Expected 'server' " + *it);
     servers.push_back(parseServer(it, tokens.end()));
-		++it;
 	}
+	if (servers.empty())
+		throw std::runtime_error("Servers empty");
 	return servers;
 }
 
@@ -77,16 +81,11 @@ ServerConfig parseServer(std::vector<std::string>::iterator &it, std::vector<std
     throw std::runtime_error("Expected '{' after server");
 	++it;
 	ServerConfig server;
-	try {
-		for (; it != end && *it != "}"; it++)
-			parseDirective(it, end, server);
-		if (it == end)
-			throw std::runtime_error("");
-		++it;
-	}
-	catch (const std::exception &e){
-		throw;
-	}
+	for (; it != end && *it != "}";)
+		parseDirective(it, end, server);
+	if (it == end)
+		throw std::runtime_error("Server not close");
+	++it;
 	return server;
 }
 
@@ -98,25 +97,75 @@ void parseDirective(std::vector<std::string>::iterator &it, std::vector<std::str
 		i++;
 	if (i == 7)
 		throw std::runtime_error("Unknown directive: " + *it);
+	std::cout << *it << std::endl;
 	switch (i)
 	{
 		case 0:
 			server.setPort(findPort(it, end));
+			break;
 		case 1:
+		{
+			if (!server.getServerName().empty())
+				throw std::runtime_error("Multiple definitions of server_name");
 			server.setServerName(findServerName(it, end));
+			break;
+		}
 		case 2:
 		{
-			std::string tmp = server.getRoot();
-			if (!tmp.empty())
+			if (!server.getRoot().empty())
 				throw std::runtime_error("Multiple definitions of root");
 			server.setRoot(findRoot(it, end));
+			break;
 		}
 		case 3:
 			server.setIndex(findIndex(it, end));
+			break;
 		case 4:
 			parseErrorPage(it, end, server);
+			break;
+		case 5:
+		{
+			if (server.getHasMaxSize() == true)
+				throw std::runtime_error("Multiple definitions of client_max_body_size");
+			server.setSizeClient(findSize(it, end));
+			server.setHasMaxSize(true);
+			break;
+		}
+		case 6:
+			server.setLocations(parseLocation(it, end));
+			break;
 	}
 }
+
+bool isNumber(const std::string& s)
+{
+    if (s.empty())
+        return false;
+    for (size_t i = 0; i < s.size(); i++)
+    {
+        if (!std::isdigit(static_cast<unsigned char>(s[i])))
+            return false;
+    }
+    return true;
+}
+
+size_t findSize(std::vector<std::string>::iterator &it, std::vector<std::string>::iterator end)
+{
+	++it;
+	if (it == end)
+		throw std::runtime_error("client_max_body_size: missing value");
+	if (!isNumber(*it))
+    throw std::runtime_error("client_max_body_size: Invalid body size");
+	size_t value = std::strtoul((*it).c_str(), NULL, 10);
+	if (value == 0)
+    throw std::runtime_error("client_max_body_size: Body size must be > 0");
+	++it;
+	if (it == end || *it != ";")
+		throw std::runtime_error("client_max_body_size: Body size: missing ';");
+	++it;
+	return value;
+}
+
 
 void	parseErrorPage(std::vector<std::string>::iterator &it, std::vector<std::string>::iterator end, ServerConfig &server)
 {
@@ -127,6 +176,8 @@ void	parseErrorPage(std::vector<std::string>::iterator &it, std::vector<std::str
 	if (it == end)
 		throw std::runtime_error("Error page: missing value");
 	code = std::stoi(*it);
+	if (code < 100 || code > 599)
+		throw std::runtime_error("Error page: invalid value");
 	++it;
 	if (it == end)
 		throw std::runtime_error("Error page: missing value");
@@ -136,6 +187,7 @@ void	parseErrorPage(std::vector<std::string>::iterator &it, std::vector<std::str
 	++it;
 	if (it == end || *it != ";")
 		throw std::runtime_error("Error page: ';'");
+	++it;
 	server.setErrorPage(code, path);
 }
 
@@ -182,7 +234,8 @@ unsigned int findPort(std::vector<std::string>::iterator &it, std::vector<std::s
 		throw std::runtime_error("listen: missing port");
 	if (*it == "}" || *it == "{")
 		throw std::runtime_error("listen: brace in port forbidden");
-	int port = std::stoi(*it);
+	int port = 0;
+	port = std::stoi(*it);
 	if (port < 1 || port > 65535)
 		throw std::runtime_error("listen: invalid port range [1-65535]");
 	++it;
@@ -261,7 +314,7 @@ std::vector<std::string>	tokenize(const std::string &data)
 				token.push_back(value);
 			continue;
 		}
-		if (isspace(data[i]))
+		if (std::isspace(static_cast<unsigned char>(data[i])))
 		{
 			if (!current.empty())
 			{
@@ -323,7 +376,12 @@ size_t ServerConfig::getBodySizeClient() const
 	return _clientMaxBodySize;
 }
 
-std::map<int, std::string> ServerConfig::getErrorPage() const
+bool ServerConfig::getHasMaxSize() const
+{
+	return _hasMaxSize;
+}
+
+const std::map<int, std::string> &ServerConfig::getErrorPage() const
 {
 	return _errorPage;
 }
@@ -359,6 +417,11 @@ void	ServerConfig::setSizeClient(size_t size)
 	_clientMaxBodySize = size;
 }
 
+void	ServerConfig::setHasMaxSize(bool v)
+{
+	_hasMaxSize = v;
+}
+
 void	ServerConfig::setErrorPage(int i, std::string s)
 {
 	_errorPage[i] = s;
@@ -367,4 +430,42 @@ void	ServerConfig::setErrorPage(int i, std::string s)
 void	ServerConfig::setLocations(LocationConfig locations)
 {
 	_locations.push_back(locations);
+}
+
+std::ostream &operator<<(std::ostream &os, const ServerConfig &srv)
+{
+	os << "======== SERVER ========\n";
+
+	os << "ports: ";
+	for (size_t i = 0; i < srv.getPort().size(); i++)
+		os << srv.getPort()[i] << " ";
+	os << "\n";
+
+	os << "server names: ";
+	for (size_t i = 0; i < srv.getServerName().size(); i++)
+		os << srv.getServerName()[i] << " ";
+	os << "\n";
+
+	os << "root: " << srv.getRoot() << "\n";
+
+	os << "index: ";
+	for (size_t i = 0; i < srv.getIndex().size(); i++)
+		os << srv.getIndex()[i] << " ";
+	os << "\n";
+
+	os << "client max body size: " << srv.getBodySizeClient() << "\n";
+	os << "has max size: " << srv.getHasMaxSize() << "\n";
+
+	os << "error pages:\n";
+	for (std::map<int, std::string>::const_iterator it = srv.getErrorPage().begin();
+		 it != srv.getErrorPage().end(); ++it)
+		os << "  " << it->first << " -> " << it->second << "\n";
+
+	os << "locations:\n";
+	std::vector<LocationConfig> locs = srv.getLocations();
+	for (size_t i = 0; i < locs.size(); i++)
+		os << locs[i];
+
+	os << "========================\n";
+	return os;
 }
