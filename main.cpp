@@ -14,11 +14,12 @@ int main()
 		"Hello, world!";
 	std::stringstream str(request);
 	std::string token;
-	while (str >> token)
+	while (std::getline(str, token))
 	{
 		std::cout << "word :" << token << std::endl;
+		if (!token.empty() && token[token.size() - 1] == '\r')
+			token.erase(token.size() - 1);
 	}
-	
 
 	return 0;
 }
