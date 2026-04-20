@@ -11,6 +11,7 @@
 /* ************************************************************************** */
 
 #pragma once
+
 #include "LocationConfig.hpp"
 #include <climits>
 #include <iostream>
@@ -21,10 +22,11 @@
 
 class ServerConfig {
 private:
-	unsigned int _port;
+	std::vector<std::string> _data;
+	std::vector<unsigned int> _port;
 	std::vector<std::string> _serverName;
 	std::string _root;
-	std::string _index;
+	std::vector<std::string> _index;
 	size_t _clientMaxBodySize;
 	std::map<int, std::string> _errorPage;
 	std::vector<LocationConfig> _locations;
@@ -35,12 +37,11 @@ private:
 	ServerConfig &operator=(ServerConfig &other);
 	~ServerConfig();
 
-	std::string	ServerConfig::recupLine(const std::string search, std::string data);
-
-	unsigned int getPort() const;
+	void	parsConfig(std::vector<std::string> &data);
+	std::vector<unsigned int> getPort() const;
 	std::vector<std::string> getServerName() const;
 	std::string getRoot() const;
-	std::string getIndex() const;
+	std::vector<std::string> getIndex() const;
 	size_t getBodySizeClient() const;
 	std::map<int, std::string> getErrorPage() const;
 	std::vector<LocationConfig> getLocations() const;
@@ -48,8 +49,19 @@ private:
 	void	setPort(unsigned int port);
 	void	setServerName(std::vector<std::string> Servername);
 	void	setRoot(std::string root);
-	void	setIndex(std::string index);
+	void	setIndex(std::vector<std::string> index);
 	void	setSizeClient(size_t size);
-	void	setErrorPage(std::map<int, std::string> errorpage);
-	void	setLocations(std::vector<LocationConfig> locations);
+	void	setErrorPage(int i, std::string s);
+	void	setLocations(LocationConfig locations);
 };
+
+std::vector<std::string> tokenize(const std::string &data);
+std::string	LoadConfigFile(const std::string &file);
+std::vector<ServerConfig> pars(const std::string &file);
+ServerConfig parseServer(std::vector<std::string>::const_iterator &it, std::vector<std::string>::iterator end);
+void parseDirective(std::vector<std::string>::iterator &it, std::vector<std::string>::iterator end, ServerConfig &server);
+unsigned int findPort(std::vector<std::string>::iterator &it, std::vector<std::string>::iterator end);
+std::vector<std::string> findServerName(std::vector<std::string>::iterator &it, std::vector<std::string>::iterator end);
+std::string findRoot(std::vector<std::string>::iterator &it, std::vector<std::string>::iterator end);
+std::vector<std::string> findIndex(std::vector<std::string>::iterator &it, std::vector<std::string>::iterator end);
+void	parseErrorPage(std::vector<std::string>::iterator &it, std::vector<std::string>::iterator end, ServerConfig &server);
