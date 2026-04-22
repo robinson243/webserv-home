@@ -6,7 +6,7 @@
 /*   By: romukena <romukena@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/04/14 15:16:52 by romukena          #+#    #+#             */
-/*   Updated: 2026/04/22 14:20:03 by romukena         ###   ########.fr       */
+/*   Updated: 2026/04/22 14:46:08 by romukena         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -46,14 +46,15 @@ class HttpRequest {
 	bool _isValid;
 	std::map<std::string, std::string> _headers;
 	std::map<std::string, std::string> _requestLine;
+	int _code;
 
   public:
 	HttpRequest();
 	~HttpRequest();
 	std::vector<unsigned char> getBody() const;
 	bool getValid() const;
-	const std::map<std::string, std::string>& getRequest() const;
-	const std::map<std::string, std::string>& getHeaders() const;
+	const std::map<std::string, std::string> &getRequest() const;
+	const std::map<std::string, std::string> &getHeaders() const;
 
 	void addBody(std::string &element);
 	void makeTrue();

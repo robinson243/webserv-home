@@ -6,13 +6,13 @@
 /*   By: romukena <romukena@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/04/14 15:16:54 by romukena          #+#    #+#             */
-/*   Updated: 2026/04/22 14:21:14 by romukena         ###   ########.fr       */
+/*   Updated: 2026/04/22 15:13:05 by romukena         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "HttpRequest.hpp"
 
-HttpRequest::HttpRequest() : _isValid(false) {
+HttpRequest::HttpRequest() : _isValid(false), _code(-1) {
 }
 
 HttpRequest::~HttpRequest() {
@@ -68,13 +68,25 @@ void HttpRequest::addRequestLine(std::stringstream &str) {
 	std::stringstream s(line);
 	std::string token;
 	size_t i = 0;
+	if (requestLength(line) != 3) {
+		_code = 400;
+		return;
+	}
 	while (s >> token) {
-		if (i == 0)
-			this->addRequest("method", token);
-		else if (i == 1)
-			this->addRequest("uri", token);
+		if (i == 0) {
+			if (token != "GET" || token != "POST" || token != "DELETE") {
+				_code = 501;
+				return;
+			}
+			addRequest("method", token);
+		} else if (i == 1)
+			addRequest("uri", token);
 		else if (i == 2)
-			this->addRequest("version", token);
+			if (token != "HTTP/1.1") {
+				_code = 505;
+				return;
+			}
+		addRequest("version", token);
 		i++;
 	}
 }
@@ -86,7 +98,7 @@ void HttpRequest::substractAndAdd(std::string &line) {
 	s >> key;
 	std::string sub = key.substr(0, key.length() - 1);
 	s >> value;
-	this->addHeaders(sub, value);
+	addHeaders(sub, value);
 }
 
 void HttpRequest::addAllHeaders(std::stringstream &str) {
@@ -94,15 +106,15 @@ void HttpRequest::addAllHeaders(std::stringstream &str) {
 	while (std::getline(str, token)) {
 		if (token == "\r")
 			break;
-		this->substractAndAdd(token);
+		substractAndAdd(token);
 	}
 }
 
 void HttpRequest::addHttpRequest(std::string &req) {
 	std::stringstream str(req);
-	this->addRequestLine(str);
-	this->addAllHeaders(str);
+	addRequestLine(str);
+	addAllHeaders(str);
 	std::string line;
 	std::getline(str, line);
-	this->addBody(line);
+	addBody(line);
 }
