@@ -6,7 +6,7 @@
 /*   By: ydembele <ydembele@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/04/14 12:17:03 by romukena          #+#    #+#             */
-/*   Updated: 2026/04/20 21:56:25 by ydembele         ###   ########.fr       */
+/*   Updated: 2026/04/21 11:36:34 by ydembele         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -111,14 +111,14 @@ class LocationConfig {
 
 std::ostream &operator<<(std::ostream &os, const LocationConfig &loc);
 
-void parseRoot(std::vector<std::string>::iterator &it, std::vector<std::string>::iterator end, LocationConfig &location);
-void parseAlias(std::vector<std::string>::iterator &it, std::vector<std::string>::iterator end, LocationConfig &location);
-void parseAutoindex(std::vector<std::string>::iterator &it, std::vector<std::string>::iterator end, LocationConfig &location);
-void	parseAllowMethods(std::vector<std::string>::iterator &it, std::vector<std::string>::iterator end, LocationConfig &location);
-void parseIndex(std::vector<std::string>::iterator &it, std::vector<std::string>::iterator end, LocationConfig &location);
-std::string parseSingleValueDirective(std::vector<std::string>::iterator &it, std::vector<std::string>::iterator end, const std::string &name);
-void	parseCgiExtension(std::vector<std::string>::iterator &it, std::vector<std::string>::iterator end, LocationConfig &location);
-LocationConfig parseLocation(std::vector<std::string>::iterator &it, std::vector<std::string>::iterator end);
-void	parseReturn(std::vector<std::string>::iterator &it, std::vector<std::string>::iterator end, LocationConfig &location);
+void parseRoot(std::vector<Token>::iterator &it, std::vector<Token>::iterator end, LocationConfig &location);
+void parseAlias(std::vector<Token>::iterator &it, std::vector<Token>::iterator end, LocationConfig &location);
+void parseAutoindex(std::vector<Token>::iterator &it, std::vector<Token>::iterator end, LocationConfig &location);
+void	parseAllowMethods(std::vector<Token>::iterator &it, std::vector<Token>::iterator end, LocationConfig &location);
+void parseIndex(std::vector<Token>::iterator &it, std::vector<Token>::iterator end, LocationConfig &location);
+std::string parseSingleValueDirective(std::vector<Token>::iterator &it, std::vector<Token>::iterator end, const std::string &name);
+void	parseCgiExtension(std::vector<Token>::iterator &it, std::vector<Token>::iterator end, LocationConfig &location);
+LocationConfig parseLocation(std::vector<Token>::iterator &it, std::vector<Token>::iterator end);
+void	parseReturn(std::vector<Token>::iterator &it, std::vector<Token>::iterator end, LocationConfig &location);
 
 #endif

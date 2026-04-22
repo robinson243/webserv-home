@@ -6,7 +6,7 @@
 /*   By: ydembele <ydembele@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/04/14 13:44:36 by romukena          #+#    #+#             */
-/*   Updated: 2026/04/20 21:59:50 by ydembele         ###   ########.fr       */
+/*   Updated: 2026/04/21 17:58:11 by ydembele         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -23,13 +23,13 @@ LocationConfig::LocationConfig()
 LocationConfig::~LocationConfig() {
 }
 
-LocationConfig parseLocation(std::vector<std::string>::iterator &it, std::vector<std::string>::iterator end)
+LocationConfig parseLocation(std::vector<Token>::iterator &it, std::vector<Token>::iterator end)
 {
 	++it;
 	if (it == end)
 		throw std::runtime_error("Location empty");
 	LocationConfig location;
-	std::string path = *it;
+	std::string path = it->value;
 	if (path.empty() || path[0] != '/')
 		throw std::runtime_error("Location path must start with '/'");
 	location.setPath(path);
@@ -40,9 +40,17 @@ LocationConfig parseLocation(std::vector<std::string>::iterator &it, std::vector
 	while (it != end && *it != "}")
 	{
 		if (*it == "root")
-    	parseRoot(it, end, location);
+		{
+			if (!location.getRoot().empty())
+				throw std::runtime_error("Mutiple definition of root on location");
+			location.setRoot(parseSingleValueDirective(it, end, it->value));
+		}
 		else if (*it == "alias")
-    	parseAlias(it, end, location);
+		{
+    	if (!location.getAlias().empty())
+				throw std::runtime_error("Mutiple definition of Alias on location");
+			location.setAlias(parseSingleValueDirective(it, end, it->value));
+		}
 		else if (*it == "autoindex")
     	parseAutoindex(it, end, location);
 		else if (*it == "allow_methods")
@@ -53,7 +61,7 @@ LocationConfig parseLocation(std::vector<std::string>::iterator &it, std::vector
 		{
 			if (!location.getUploadPath().empty())
 				throw std::runtime_error("Mutilple definition of upload path");
-			location.setUploadPath(parseSingleValueDirective(it, end, *it));
+			location.setUploadPath(parseSingleValueDirective(it, end, it->value));
 		}
 		else if (*it == "client_max_body_size")
     {
@@ -75,7 +83,7 @@ LocationConfig parseLocation(std::vector<std::string>::iterator &it, std::vector
 	return location;
 }
 
-void	parseReturn(std::vector<std::string>::iterator &it, std::vector<std::string>::iterator end, LocationConfig &location)
+void	parseReturn(std::vector<Token>::iterator &it, std::vector<Token>::iterator end, LocationConfig &location)
 {
 	int code;
 	std::string path;
@@ -85,61 +93,61 @@ void	parseReturn(std::vector<std::string>::iterator &it, std::vector<std::string
 	++it;
 	if (it == end)
 		throw std::runtime_error("Return: missing value");
-	code = std::stoi(*it);
+	code = std::stoi(it->value);
 	if (code < 100 || code > 599)
 		throw std::runtime_error("Return: invalid value");
 	++it;
 	if (it == end)
 		throw std::runtime_error("Return: missing value");
-	if (*it == "}" || *it == "{" || *it == ";")
+	if ((*it == "}" || *it == "{" || *it == ";") && !it->in_quotes)
 		throw std::runtime_error("Return: invalid value");
-	path = *it;
+	path = it->value;
 	++it;
-	if (it == end || *it != ";")
-		throw std::runtime_error("Return: ';'");
+	if (it == end || *it != ";" || it->in_quotes)
+		throw std::runtime_error("Return: missing ';'");
 	location.setCode(code);
 	location.setUrl(path);
 	++it; // skip ;
 }
 
-void	parseCgiExtension(std::vector<std::string>::iterator &it, std::vector<std::string>::iterator end, LocationConfig &location)
+void	parseCgiExtension(std::vector<Token>::iterator &it, std::vector<Token>::iterator end, LocationConfig &location)
 {
 	std::string extension;
 	std::string path;
 
 	++it;
-	if (it == end || *it == "{" || *it == "}" || *it == ";")
+	if (it == end || ((*it == "{" || *it == "}" || *it == ";") && !it->in_quotes))
 		throw std::runtime_error("cgi extension: missing value");
-	extension = *it;
+	extension = it->value;
 	++it;
 	if (it == end)
 		throw std::runtime_error("cgi extension: missing value");
-	if (*it == "}" || *it == "{" || *it == ";")
+	if ((*it == "}" || *it == "{" || *it == ";") && !it->in_quotes)
 		throw std::runtime_error("cgi extension: invalid value");
-	path = *it;
+	path = it->value;
 	++it;
-	if (it == end || *it != ";")
+	if (it == end || *it != ";" || it->in_quotes)
 		throw std::runtime_error("cgi extension: missing ';'");
 	++it; // skip ;
 	location.addCgiExtension(extension, path);
 }
 
-std::string parseSingleValueDirective(std::vector<std::string>::iterator &it, std::vector<std::string>::iterator end, const std::string &name)
+std::string parseSingleValueDirective(std::vector<Token>::iterator &it, std::vector<Token>::iterator end, const std::string &name)
 {
     ++it;
     if (it == end)
         throw std::runtime_error(name + ": missing value");
-    if (*it == "{" || *it == "}" || *it == ";")
+    if ((*it == "{" || *it == "}" || *it == ";") && !it->in_quotes)
         throw std::runtime_error(name + ": invalid value");
-    std::string value = *it;
+    std::string value = it->value;
     ++it;
-    if (it == end || *it != ";")
+    if (it == end || *it != ";" || it->in_quotes)
         throw std::runtime_error(name + ": expected ';'");
 		++it; // skip ;
     return value;
 }
 
-void parseIndex(std::vector<std::string>::iterator &it, std::vector<std::string>::iterator end, LocationConfig &location)
+void parseIndex(std::vector<Token>::iterator &it, std::vector<Token>::iterator end, LocationConfig &location)
 {
 	std::vector<std::string> index;
 	std::vector<std::string> tmp = location.getIndex();
@@ -149,11 +157,11 @@ void parseIndex(std::vector<std::string>::iterator &it, std::vector<std::string>
 	++it;
 	if (it == end)
 		throw std::runtime_error("Index: missing value");
-	while (it != end && *it != ";")
+	while (it != end && (*it != ";" || it->in_quotes))
 	{
 		if (*it == "}" || *it == "{")
 			throw std::runtime_error("Index: brace in index forbidden");
-		index.push_back(*it);
+		index.push_back(it->value);
 		++it;
 	}
 	if (it == end)
@@ -164,7 +172,7 @@ void parseIndex(std::vector<std::string>::iterator &it, std::vector<std::string>
 	location.setIndex(index);
 }
 
-void	parseAllowMethods(std::vector<std::string>::iterator &it, std::vector<std::string>::iterator end, LocationConfig &location)
+void	parseAllowMethods(std::vector<Token>::iterator &it, std::vector<Token>::iterator end, LocationConfig &location)
 {
 	std::set<std::string> allowmethod;
 	const std::set<std::string> tmp = location.getAllowMethods();
@@ -174,15 +182,15 @@ void	parseAllowMethods(std::vector<std::string>::iterator &it, std::vector<std::
 	++it;
 	if (it == end)
 		throw std::runtime_error("allow_methods: missing value");
-	while (it != end && *it != ";")
+	while (it != end && (*it != ";" && !it->in_quotes))
 	{
 		if (*it == "}" || *it == "{")
 			throw std::runtime_error("allow_methods: brace in name forbidden");
 		if (*it != "GET" && *it != "POST" && *it != "DELETE")
-			throw std::runtime_error("allow_methods: invalid value " + *it);
-		if (!location.isMethodAllowed(*it))
+			throw std::runtime_error("allow_methods: invalid value " + it->value);
+		if (!location.isMethodAllowed(it->value))
 			throw std::runtime_error("allow_methods: Multiple same method");
-		allowmethod.insert(*it);
+		allowmethod.insert(it->value);
 		++it;
 	}
 	if (it == end)
@@ -193,7 +201,7 @@ void	parseAllowMethods(std::vector<std::string>::iterator &it, std::vector<std::
 	location.setAllowMethods(allowmethod);
 }
 
-void parseAutoindex(std::vector<std::string>::iterator &it, std::vector<std::string>::iterator end, LocationConfig &location)
+void parseAutoindex(std::vector<Token>::iterator &it, std::vector<Token>::iterator end, LocationConfig &location)
 {
 	if (location.gethasAutoindex())
 		throw std::runtime_error("Multiple definition of Auto index");
@@ -207,7 +215,7 @@ void parseAutoindex(std::vector<std::string>::iterator &it, std::vector<std::str
 	else
 		throw std::runtime_error("Autoindex: invalid value");
 	++it;
-	if (it == end || *it != ";")
+	if (it == end || *it != ";" || it->in_quotes)
 		throw std::runtime_error("Autoindex: missing ';");
 	++it; // skip ;
 	location.sethasAutoindex(true);
@@ -384,7 +392,7 @@ std::ostream &operator<<(std::ostream &os, const LocationConfig &loc)
 		os << "return url: " << loc.getUrl() << "\n";
 	}
 
-	if (!loc.getRoot().empty())
+	// if (!loc.getRoot().empty())
 		os << "root: " << loc.getRoot() << "\n";
 
 	if (!loc.getPath().empty())

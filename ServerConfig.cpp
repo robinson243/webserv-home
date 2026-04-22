@@ -6,7 +6,7 @@
 /*   By: ydembele <ydembele@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/04/16 13:40:39 by ydembele          #+#    #+#             */
-/*   Updated: 2026/04/20 21:50:50 by ydembele         ###   ########.fr       */
+/*   Updated: 2026/04/21 19:43:29 by ydembele         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -43,10 +43,6 @@ ServerConfig &ServerConfig::operator=(ServerConfig &other)
 ServerConfig::~ServerConfig()
 {}
 
-ServerConfig::ServerConfig(const std::string data)
-{
-	_data = tokenize(data);
-}
 
 std::vector<ServerConfig> pars(const std::string &file)
 {
@@ -56,32 +52,79 @@ std::vector<ServerConfig> pars(const std::string &file)
     throw std::runtime_error("Config file is empty or cannot be read");
 	
 	std::vector<ServerConfig> servers;
-	std::vector<std::string> tokens = tokenize(content);
+	std::vector<Token> tokens = tokenize(content);
 
-	std::vector<std::string>::iterator it = tokens.begin();
-	if (it == tokens.end() || *it != "server")
+	std::vector<Token>::iterator it = tokens.begin();
+	if (it == tokens.end() || it->value != "server")
     throw std::runtime_error("Config must start with server");
 	while (it != tokens.end())
 	{
-    if (*it != "server")
-        throw std::runtime_error("Expected 'server' " + *it);
-    servers.push_back(parseServer(it, tokens.end()));
+    if (it->value != "server")
+        throw std::runtime_error("Expected 'server' " + it->value);
+		ServerConfig server = parseServer(it, tokens.end());
+		validateServer(server);
+    servers.push_back(server);
 	}
 	if (servers.empty())
 		throw std::runtime_error("Servers empty");
 	return servers;
 }
 
-ServerConfig parseServer(std::vector<std::string>::iterator &it, std::vector<std::string>::iterator end)
+std::map<int, std::vector<ServerConfig>> groupServersByPort(const std::vector<ServerConfig> &servers)
 {
-	if (it == end || *it != "server")
+	std::map<int, std::vector<ServerConfig>> serversByPort;
+	for (size_t i = 0; i < servers.size(); i++)
+	{
+		const std::vector<unsigned int> &port = servers[i].getPort();
+		for (size_t j = 0; j < port.size(); j++)
+			serversByPort[port[j]].push_back(servers[i]);
+	}
+	return serversByPort;
+}
+
+void validateServer(ServerConfig &server)
+{
+	if (server.getPort().empty())
+		throw std::runtime_error("Server: missing listen");
+	if (server.getIndex().empty())
+	{
+		std::vector<std::string> def;
+		def.push_back("index.html");
+		server.setIndex(def);
+	}
+	std::set<std::string> paths;
+	std::vector<LocationConfig> &locations = server.getLocations();
+	for (size_t i = 0; i < locations.size(); i++)
+	{
+		const std::string &path = locations[i].getPath();
+		if (path.empty() || path[0] != '/')
+			throw std::runtime_error("Location: invalid path");
+		if (paths.count(path))
+			throw std::runtime_error("Location: duplicate path: " + path);
+		paths.insert(path);
+	}
+	for (size_t i = 0; i < locations.size(); i++)
+	{
+		LocationConfig &loc = locations[i];
+		if (loc.getRoot().empty())
+			loc.setRoot(server.getRoot());
+		if (loc.getIndex().empty())
+			loc.setIndex(server.getIndex());
+		if (loc.gethasmaxsize() == 0 && server.getHasMaxSize())
+			loc.setMaxBody(server.getBodySizeClient());
+	}
+}
+
+ServerConfig parseServer(std::vector<Token>::iterator &it, std::vector<Token>::iterator end)
+{
+	if (it == end || it->value != "server")
     throw std::runtime_error("Expected 'server'");
 	++it;
-	if (it == end || *it != "{")
+	if (it == end || it->value != "{" ||  it->in_quotes)
     throw std::runtime_error("Expected '{' after server");
 	++it;
 	ServerConfig server;
-	for (; it != end && *it != "}";)
+	for (; it != end && (it->value != "}" || it->in_quotes);)
 		parseDirective(it, end, server);
 	if (it == end)
 		throw std::runtime_error("Server not close");
@@ -89,15 +132,15 @@ ServerConfig parseServer(std::vector<std::string>::iterator &it, std::vector<std
 	return server;
 }
 
-void parseDirective(std::vector<std::string>::iterator &it, std::vector<std::string>::iterator end, ServerConfig &server)
+void parseDirective(std::vector<Token>::iterator &it, std::vector<Token>::iterator end, ServerConfig &server)
 {
 	std::array<std::string, 7> directives = {"listen", "server_name", "root", "index", "error_page", "client_max_body_size", "location"};
 	int i = 0;
-	while (i < 7 && *it != directives[i])
+	while (i < 7 && it->value != directives[i])
 		i++;
 	if (i == 7)
-		throw std::runtime_error("Unknown directive: " + *it);
-	std::cout << *it << std::endl;
+		throw std::runtime_error("Unknown directive: " + it->value);
+	std::cout << it->value << std::endl;
 	switch (i)
 	{
 		case 0:
@@ -149,25 +192,24 @@ bool isNumber(const std::string& s)
     return true;
 }
 
-size_t findSize(std::vector<std::string>::iterator &it, std::vector<std::string>::iterator end)
+size_t findSize(std::vector<Token>::iterator &it, std::vector<Token>::iterator end)
 {
 	++it;
 	if (it == end)
 		throw std::runtime_error("client_max_body_size: missing value");
-	if (!isNumber(*it))
+	if (!isNumber(it->value))
     throw std::runtime_error("client_max_body_size: Invalid body size");
-	size_t value = std::strtoul((*it).c_str(), NULL, 10);
+	size_t value = std::strtoul((it->value).c_str(), NULL, 10);
 	if (value == 0)
     throw std::runtime_error("client_max_body_size: Body size must be > 0");
 	++it;
-	if (it == end || *it != ";")
+	if (it == end || *it != ";" || it->in_quotes)
 		throw std::runtime_error("client_max_body_size: Body size: missing ';");
 	++it;
 	return value;
 }
 
-
-void	parseErrorPage(std::vector<std::string>::iterator &it, std::vector<std::string>::iterator end, ServerConfig &server)
+void	parseErrorPage(std::vector<Token>::iterator &it, std::vector<Token>::iterator end, ServerConfig &server)
 {
 	int code;
 	std::string path;
@@ -175,33 +217,42 @@ void	parseErrorPage(std::vector<std::string>::iterator &it, std::vector<std::str
 	++it;
 	if (it == end)
 		throw std::runtime_error("Error page: missing value");
-	code = std::stoi(*it);
+	try
+	{
+		code = std::stoi(it->value);
+	}
+	catch (...)
+	{
+		throw std::runtime_error("Error page: invalid code format");
+	}
 	if (code < 100 || code > 599)
-		throw std::runtime_error("Error page: invalid value");
+		throw std::runtime_error("Error page: invalid code range [100-599]");
 	++it;
 	if (it == end)
 		throw std::runtime_error("Error page: missing value");
-	if (*it == "}" || *it == "{" || *it == ";")
+	if ((*it == "}" || *it == "{" || *it == ";") && !it->in_quotes)
 		throw std::runtime_error("Error page: invalid value");
-	path = *it;
+	path = it->value;
 	++it;
-	if (it == end || *it != ";")
+	if (it == end || *it != ";" || it->in_quotes)
 		throw std::runtime_error("Error page: ';'");
 	++it;
 	server.setErrorPage(code, path);
 }
 
-std::vector<std::string> findIndex(std::vector<std::string>::iterator &it, std::vector<std::string>::iterator end)
+std::vector<std::string> findIndex(std::vector<Token>::iterator &it, std::vector<Token>::iterator end)
 {
 	std::vector<std::string> index;
 	++it;
 	if (it == end)
 		throw std::runtime_error("Index: missing value");
-	while (it != end && *it != ";")
+	while (it != end)
 	{
-		if (*it == "}" || *it == "{")
+		if (*it == ";" && !it->in_quotes)
+			break ;
+		if ((*it == "}" || *it == "{") && it->in_quotes)
 			throw std::runtime_error("Index: brace in name forbidden");
-		index.push_back(*it);
+		index.push_back(it->value);
 		++it;
 	}
 	if (it == end)
@@ -212,50 +263,57 @@ std::vector<std::string> findIndex(std::vector<std::string>::iterator &it, std::
 	return index;
 }
 
-std::string findRoot(std::vector<std::string>::iterator &it, std::vector<std::string>::iterator end)
+std::string findRoot(std::vector<Token>::iterator &it, std::vector<Token>::iterator end)
 {
 	++it;
 	if (it == end)
 		throw std::runtime_error("Root: missing root");
-	if (*it == "}" || *it == "{" || *it == ";")
+	if ((*it == "}" || *it == "{" || *it == ";") && !it->in_quotes)
 		throw std::runtime_error("Root: invalid value");
-	std::string s = *it;
+	std::string s = it->value;
 	++it;
-	if (it == end || *it != ";")
+	if (it == end || *it != ";" || it->in_quotes)
 		throw std::runtime_error("Root: expected ';'");
 	++it;
 	return s;
 }
 
-unsigned int findPort(std::vector<std::string>::iterator &it, std::vector<std::string>::iterator end)
+unsigned int findPort(std::vector<Token>::iterator &it, std::vector<Token>::iterator end)
 {
 	++it;
 	if (it == end)
 		throw std::runtime_error("listen: missing port");
-	if (*it == "}" || *it == "{")
+	if ((*it == "}" && !it->in_quotes) || (*it == "{" && !it->in_quotes))
 		throw std::runtime_error("listen: brace in port forbidden");
 	int port = 0;
-	port = std::stoi(*it);
+	try
+	{
+		port = std::stoi(it->value);
+	}
+	catch (...)
+	{
+		throw std::runtime_error("listen: invalid port format");
+	}
 	if (port < 1 || port > 65535)
 		throw std::runtime_error("listen: invalid port range [1-65535]");
 	++it;
-	if (it == end || *it != ";")
+	if (it == end || *it != ";" || it->in_quotes)
     throw std::runtime_error("listen: expected ';'");
 	++it; // Skip ;
 	return static_cast<unsigned int>(port);
 }
 
-std::vector<std::string> findServerName(std::vector<std::string>::iterator &it, std::vector<std::string>::iterator end)
+std::vector<std::string> findServerName(std::vector<Token>::iterator &it, std::vector<Token>::iterator end)
 {
 	std::vector<std::string> servername;
 	++it;
 	if (it == end)
 		throw std::runtime_error("server_name: missing value");
-	while (it != end && *it != ";")
+	while (it != end && !(*it == ";" && !it->in_quotes))
 	{
-		if (*it == "}" || *it == "{")
+		if ((*it == "}" || *it == "{") && !it->in_quotes)
 			throw std::runtime_error("server_name: brace in name forbidden");
-		servername.push_back(*it);
+		servername.push_back(it->value);
 		++it;
 	}
 	if (it == end)
@@ -279,10 +337,10 @@ std::string	LoadConfigFile(const std::string &file)
 	return data;
 }
 
-std::vector<std::string>	tokenize(const std::string &data)
+std::vector<Token>	tokenize(const std::string &data)
 {
 	std::string	current;
-	std::vector<std::string> token;
+	std::vector<Token> tokens;
 
 	for (size_t i = 0; i < data.size(); i++)
 	{
@@ -296,29 +354,37 @@ std::vector<std::string>	tokenize(const std::string &data)
 		{
 			if (!current.empty())
     	{
-        token.push_back(current);
+        tokens.push_back(current);
         current.clear();
     	}
     	i++;
 			std::string value;
-			while (i < data.size() && data[i] != '"')
-    	{
-        value += data[i];
-        i++;
-    	}
+			while (i < data.size())
+			{
+				if (data[i] == '\\' && i + 1 < data.size())
+				{
+					value += data[i + 1];
+					i += 2;
+				}
+				else if (data[i] == '"')
+					break;
+				else
+				{
+					value += data[i];
+					i++;
+				}
+			}
     	if (i == data.size())
         throw std::runtime_error("Unclosed quote");
-			if (value.size() == 1 && (value[0] == '}' || value[0] == '{'))
-				throw std::runtime_error("Lone brace in quoted string");
-			if (!value.empty())
-				token.push_back(value);
+			i++;
+			tokens.push_back(Token(value, true));
 			continue;
 		}
 		if (std::isspace(static_cast<unsigned char>(data[i])))
 		{
 			if (!current.empty())
 			{
-				token.push_back(current);
+				tokens.push_back(current);
 				current.clear();
 			}
 			continue;
@@ -327,20 +393,20 @@ std::vector<std::string>	tokenize(const std::string &data)
 		{
 			if (!current.empty())
 			{
-				token.push_back(current);
+				tokens.push_back(current);
 				current.clear();
 			}
-			token.push_back(std::string(1, data[i]));
+			tokens.push_back(std::string(1, data[i]));
       continue;
 		}
 		current += data[i];
 	}
 	if (!current.empty())
 	{
-		token.push_back(current);
+		tokens.push_back(current);
 		current.clear();
 	}
-	return token;
+	return tokens;
 }
 
 void	ServerConfig::parsConfig(std::vector<std::string> &data)
@@ -386,11 +452,15 @@ const std::map<int, std::string> &ServerConfig::getErrorPage() const
 	return _errorPage;
 }
 
-std::vector<LocationConfig> ServerConfig::getLocations() const
+const std::vector<LocationConfig>& ServerConfig::getLocations() const
 {
 	return _locations;
 }
 
+std::vector<LocationConfig>& ServerConfig::getLocations()
+{
+	return _locations;
+}
 
 void	ServerConfig::setPort(unsigned int port)
 {
@@ -468,4 +538,14 @@ std::ostream &operator<<(std::ostream &os, const ServerConfig &srv)
 
 	os << "========================\n";
 	return os;
+}
+
+bool operator==(const Token &t, const std::string &s)
+{
+	return t.value == s;
+}
+
+bool operator!=(const Token &t, const std::string &s)
+{
+	return t.value != s;
 }
