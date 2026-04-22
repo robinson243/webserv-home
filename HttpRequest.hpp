@@ -6,7 +6,7 @@
 /*   By: romukena <romukena@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/04/14 15:16:52 by romukena          #+#    #+#             */
-/*   Updated: 2026/04/16 17:33:02 by romukena         ###   ########.fr       */
+/*   Updated: 2026/04/22 13:47:29 by romukena         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,6 +14,7 @@
 
 #include <iostream>
 #include <map>
+#include <sstream>
 #include <vector>
 
 /*
@@ -51,11 +52,15 @@ class HttpRequest {
 	~HttpRequest();
 	std::vector<unsigned char> getBody() const;
 	bool getValid() const;
-	std::map<std::string, std::string> getHeaders() const;
-	std::map<std::string, std::string> getRequest() const;
+	const std::map<std::string, std::string>& getRequest() const;
+	const std::map<std::string, std::string>& getHeaders() const;
 
 	void addBody(std::string &element);
 	void makeTrue();
-	void addHeaders(std::string &key, std::string &element);
-	void addRequest(std::string &key, std::string &element);
+	void addHeaders(const std::string &key, std::string &element);
+	void addRequest(const std::string &key, std::string &element);
+	size_t requestLength(std::string &e);
+	void addRequestLine(std::stringstream &str);
+	void addAllHeaders(std::stringstream &str);
+	void substractAndAdd(std::string &line);
 };
