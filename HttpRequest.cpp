@@ -6,7 +6,7 @@
 /*   By: romukena <romukena@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/04/14 15:16:54 by romukena          #+#    #+#             */
-/*   Updated: 2026/04/22 15:13:05 by romukena         ###   ########.fr       */
+/*   Updated: 2026/04/22 17:23:09 by romukena         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -106,15 +106,64 @@ void HttpRequest::addAllHeaders(std::stringstream &str) {
 	while (std::getline(str, token)) {
 		if (token == "\r")
 			break;
+		if (token.find(":") == std::string::npos || token.find(":") == 0
+			|| token.empty()) {
+			_code = 400;
+			return;
+		}
 		substractAndAdd(token);
 	}
+}
+
+bool HttpRequest::findHostInHeaders() {
+	std::map<std::string, std::string> headers = getHeaders();
+	if (headers["Host"].empty())
+		return false;
+	return true;
+}
+
+bool HttpRequest::isNumber(std::string &e) {
+	for (size_t i = 0; i < e.length(); i++) {
+		if (isdigit(e[i])) {
+			return false;
+		}
+	}
+	return true;
+}
+
+bool HttpRequest:: validateBody(std::string &e)
+{
+	size_t len = e.length();
+	std::map<std::string, std::string> headers = getHeaders();
+	std::string contentLength = headers["Content-Length"];
+	int numContentLength;
+	if (isNumber(contentLength))
+	{
+		numContentLength = std::stoi(contentLength.c_str());
+		if (numContentLength != e.length())
+		{
+			_code = 400;
+			return false;
+		}
+	}
+	else
+		return false;
+	return true;
 }
 
 void HttpRequest::addHttpRequest(std::string &req) {
 	std::stringstream str(req);
 	addRequestLine(str);
 	addAllHeaders(str);
+	if (!findHostInHeaders()) {
+		_code = 400;
+		return;
+	}
 	std::string line;
 	std::getline(str, line);
+	if (line.empty() || !validateBody(line)) {
+		_code = 400;
+		return;
+	}
 	addBody(line);
 }
