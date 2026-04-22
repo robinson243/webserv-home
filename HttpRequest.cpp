@@ -6,7 +6,7 @@
 /*   By: romukena <romukena@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/04/14 15:16:54 by romukena          #+#    #+#             */
-/*   Updated: 2026/04/22 13:47:33 by romukena         ###   ########.fr       */
+/*   Updated: 2026/04/22 14:21:14 by romukena         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -26,11 +26,11 @@ bool HttpRequest::getValid() const {
 	return _isValid;
 }
 
-const std::map<std::string, std::string>& HttpRequest::getHeaders() const {
+const std::map<std::string, std::string> &HttpRequest::getHeaders() const {
 	return _headers;
 }
 
-const std::map<std::string, std::string>& HttpRequest::getRequest() const {
+const std::map<std::string, std::string> &HttpRequest::getRequest() const {
 	return _requestLine;
 }
 
@@ -96,4 +96,13 @@ void HttpRequest::addAllHeaders(std::stringstream &str) {
 			break;
 		this->substractAndAdd(token);
 	}
+}
+
+void HttpRequest::addHttpRequest(std::string &req) {
+	std::stringstream str(req);
+	this->addRequestLine(str);
+	this->addAllHeaders(str);
+	std::string line;
+	std::getline(str, line);
+	this->addBody(line);
 }

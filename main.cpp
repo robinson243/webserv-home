@@ -9,12 +9,8 @@ int main() {
 						  "Connection: close\r\n"
 						  "\r\n"
 						  "Hello, world!";
-	std::stringstream str(request);
-	test.addRequestLine(str);
-	test.addAllHeaders(str);
-	std::string line;
-	std::getline(str, line);
-	test.addBody(line);
+
+	test.addHttpRequest(request);
 	// std::map<std::string, std::string>::const_iterator it;
 	// for (it = test.getHeaders().begin(); it != test.getHeaders().end(); ++it)
 	// {
