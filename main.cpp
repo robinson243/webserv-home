@@ -10,15 +10,19 @@ int main() {
 						  "\r\n"
 						  "Hello, world!";
 	std::stringstream str(request);
-	std::string token;
 	test.addRequestLine(str);
 	test.addAllHeaders(str);
-	std::map<std::string, std::string>::const_iterator it;
-	for (it = test.getHeaders().begin(); it != test.getHeaders().end(); ++it)
-	{
-		std::cout << "key: " << it->first << " value: " << it->second << std::endl;
-	}
-	
+	std::string line;
+	std::getline(str, line);
+	test.addBody(line);
+	// std::map<std::string, std::string>::const_iterator it;
+	// for (it = test.getHeaders().begin(); it != test.getHeaders().end(); ++it)
+	// {
+	// 	std::cout << "key: " << it->first << " value: " << it->second <<
+	// std::endl;
+	// }
+	std::vector<unsigned char> body = test.getBody();
+	std::cout << std::string(body.begin(), body.end());
 	// std::cout << "word :" << token << std::endl;
 	// while (std::getline(str, token))
 	// {
