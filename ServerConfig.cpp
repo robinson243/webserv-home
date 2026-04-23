@@ -6,7 +6,7 @@
 /*   By: ydembele <ydembele@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/04/16 13:40:39 by ydembele          #+#    #+#             */
-/*   Updated: 2026/04/21 19:43:29 by ydembele         ###   ########.fr       */
+/*   Updated: 2026/04/22 16:46:28 by ydembele         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -25,7 +25,7 @@ ServerConfig::ServerConfig()
 	_hasMaxSize = false;
 }
 
-ServerConfig &ServerConfig::operator=(ServerConfig &other)
+ServerConfig &ServerConfig::operator=(const ServerConfig &other)
 {
 	if (this != &other)
 	{
@@ -38,6 +38,17 @@ ServerConfig &ServerConfig::operator=(ServerConfig &other)
 		_locations = other._locations;
 	}
 	return *this;
+}
+
+ServerConfig::ServerConfig(const ServerConfig &other)
+{
+    _port = other._port;
+    _serverName = other._serverName;
+    _root = other._root;
+    _index = other._index;
+    _clientMaxBodySize = other._clientMaxBodySize;
+    _errorPage = other._errorPage;
+    _locations = other._locations;
 }
 
 ServerConfig::~ServerConfig()
@@ -70,16 +81,16 @@ std::vector<ServerConfig> pars(const std::string &file)
 	return servers;
 }
 
-std::map<int, std::vector<ServerConfig>> groupServersByPort(const std::vector<ServerConfig> &servers)
+std::map<int, std::vector<ServerConfig*>> groupServersByPort(const std::vector<ServerConfig> &servers)
 {
-	std::map<int, std::vector<ServerConfig>> serversByPort;
+	std::map<int, std::vector<ServerConfig*>> serversByPort;
 	for (size_t i = 0; i < servers.size(); i++)
 	{
-		const std::vector<unsigned int> &port = servers[i].getPort();
+		const std::vector<unsigned int> port = servers[i].getPort();
 		for (size_t j = 0; j < port.size(); j++)
-			serversByPort[port[j]].push_back(servers[i]);
+			serversByPort[port[j]].push_back(const_cast<ServerConfig*>(&servers[i]));
 	}
-	return serversByPort;
+	return (serversByPort);
 }
 
 void validateServer(ServerConfig &server)

@@ -6,7 +6,7 @@
 /*   By: ydembele <ydembele@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/04/14 15:01:30 by romukena          #+#    #+#             */
-/*   Updated: 2026/04/21 19:43:26 by ydembele         ###   ########.fr       */
+/*   Updated: 2026/04/22 15:49:49 by ydembele         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -47,7 +47,8 @@ private:
 
   public:
 	ServerConfig();
-	ServerConfig &operator=(ServerConfig &other);
+	ServerConfig &operator=(const ServerConfig &other);
+	ServerConfig(const ServerConfig &other);
 	~ServerConfig();
 
 	void	parsConfig(std::vector<std::string> &data);
@@ -85,7 +86,7 @@ std::vector<std::string> findIndex(std::vector<Token>::iterator &it, std::vector
 void	parseErrorPage(std::vector<Token>::iterator &it, std::vector<Token>::iterator end, ServerConfig &server);
 size_t findSize(std::vector<Token>::iterator &it, std::vector<Token>::iterator end);
 void validateServer(ServerConfig &server);
-std::map<int, std::vector<ServerConfig>> groupServersByPort(const std::vector<ServerConfig> &servers);
+std::map<int, std::vector<ServerConfig*>> groupServersByPort(const std::vector<ServerConfig> &servers);
 
 bool operator==(const Token &t, const std::string &s);
 bool operator!=(const Token &t, const std::string &s);
