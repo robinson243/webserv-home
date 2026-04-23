@@ -6,7 +6,7 @@
 /*   By: romukena <romukena@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/04/14 15:16:54 by romukena          #+#    #+#             */
-/*   Updated: 2026/04/22 17:23:09 by romukena         ###   ########.fr       */
+/*   Updated: 2026/04/23 13:05:55 by romukena         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -52,6 +52,29 @@ void HttpRequest::addRequest(const std::string &key, std::string &element) {
 	_requestLine.insert(std::pair<std::string, std::string>(key, element));
 }
 
+void HttpRequest::print() const {
+	std::cout << "=== REQUEST LINE ===" << std::endl;
+	for (std::map<std::string, std::string>::const_iterator it =
+			 _requestLine.begin();
+		 it != _requestLine.end();
+		 ++it)
+		std::cout << it->first << ": " << it->second << std::endl;
+
+	std::cout << "=== HEADERS ===" << std::endl;
+	for (std::map<std::string, std::string>::const_iterator it =
+			 _headers.begin();
+		 it != _headers.end();
+		 ++it)
+		std::cout << it->first << ": " << it->second << std::endl;
+
+	std::cout << "=== BODY ===" << std::endl;
+	std::cout << std::string(_body.begin(), _body.end()) << std::endl;
+
+	std::cout << "=== STATUS ===" << std::endl;
+	std::cout << "code: " << _code << std::endl;
+	std::cout << "valid: " << _isValid << std::endl;
+}
+
 size_t HttpRequest::requestLength(std::string &e) {
 	std::stringstream str(e);
 	std::string token;
@@ -74,19 +97,20 @@ void HttpRequest::addRequestLine(std::stringstream &str) {
 	}
 	while (s >> token) {
 		if (i == 0) {
-			if (token != "GET" || token != "POST" || token != "DELETE") {
+			if (token != "GET" && token != "POST" && token != "DELETE") {
 				_code = 501;
 				return;
 			}
 			addRequest("method", token);
 		} else if (i == 1)
 			addRequest("uri", token);
-		else if (i == 2)
+		else if (i == 2) {
 			if (token != "HTTP/1.1") {
 				_code = 505;
 				return;
 			}
-		addRequest("version", token);
+			addRequest("version", token);
+		}
 		i++;
 	}
 }
@@ -123,31 +147,30 @@ bool HttpRequest::findHostInHeaders() {
 }
 
 bool HttpRequest::isNumber(std::string &e) {
-	for (size_t i = 0; i < e.length(); i++) {
-		if (isdigit(e[i])) {
+	for (size_t i = 0; e[i]; i++) {
+		if (!isdigit(e[i])) {
 			return false;
 		}
 	}
 	return true;
 }
 
-bool HttpRequest:: validateBody(std::string &e)
-{
-	size_t len = e.length();
+bool HttpRequest::validateBody(std::string &e) {
 	std::map<std::string, std::string> headers = getHeaders();
-	std::string contentLength = headers["Content-Length"];
-	int numContentLength;
-	if (isNumber(contentLength))
-	{
-		numContentLength = std::stoi(contentLength.c_str());
-		if (numContentLength != e.length())
-		{
-			_code = 400;
-			return false;
-		}
-	}
-	else
+	std::map<std::string, std::string>::iterator it =
+		headers.find("Content-Length");
+	if (it == headers.end())
+		return true;
+
+	std::string contentLength = it->second;
+
+	if (!isNumber(contentLength))
 		return false;
+	int numContentLength = std::stoi(contentLength);
+	if (numContentLength != e.length()) {
+		_code = 400;
+		return false;
+	}
 	return true;
 }
 
@@ -161,9 +184,15 @@ void HttpRequest::addHttpRequest(std::string &req) {
 	}
 	std::string line;
 	std::getline(str, line);
-	if (line.empty() || !validateBody(line)) {
+	if (!validateBody(line)) {
 		_code = 400;
 		return;
 	}
 	addBody(line);
+	if (_code == -1)
+	{
+		_code = 200;
+		makeTrue();
+	}
+	
 }
