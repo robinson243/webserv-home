@@ -6,7 +6,7 @@
 /*   By: romukena <romukena@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/04/16 14:09:04 by romukena          #+#    #+#             */
-/*   Updated: 2026/04/17 16:13:46 by romukena         ###   ########.fr       */
+/*   Updated: 2026/04/25 01:36:23 by romukena         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -64,7 +64,7 @@ void HttpResponse::addBodyResponse(std::string &e)
 	_body.insert(_body.end(), e.begin(), e.end());
 }
 
-void HttpResponse::addHeadersResponse(std::string &key, std::string &e)
+void HttpResponse::addHeadersResponse(const std::string &key, std::string &e)
 {
 	_headers.insert(std::pair<std::string, std::string>(key, e));
 }

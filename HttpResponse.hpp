@@ -6,7 +6,7 @@
 /*   By: romukena <romukena@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/04/14 15:48:13 by romukena          #+#    #+#             */
-/*   Updated: 2026/04/22 14:46:01 by romukena         ###   ########.fr       */
+/*   Updated: 2026/04/25 01:36:35 by romukena         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -44,7 +44,7 @@ public:
 	void addVersion(std::string &e);
 	void addMessage(std::string &e);
 	void addBodyResponse(std::string &e);
-	void addHeadersResponse(std::string &key, std::string &e);
+	void addHeadersResponse(const std::string &key, std::string &e);
 };
 
 
