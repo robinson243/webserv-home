@@ -6,7 +6,7 @@
 /*   By: ydembele <ydembele@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/04/20 19:34:17 by ydembele          #+#    #+#             */
-/*   Updated: 2026/04/24 18:45:00 by ydembele         ###   ########.fr       */
+/*   Updated: 2026/04/24 18:45:38 by ydembele         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -55,26 +55,26 @@ LocationConfig selectLocation(std::string uri, ServerConfig &servers)
     return *l;
 }
 
-int main(int ac, char **av)
-{
-    try
-    {
-        std::vector<ServerConfig> servers;
-        if (ac == 1)
-            servers = pars("exemple.conf");
-        else
-            servers = pars(av[1]);
-        for (size_t i = 0; i < servers.size(); i++)
-	        std::cout << servers[i];
-        std::map<int, std::vector<ServerConfig*>> serversByPort = groupServersByPort(servers);
+// int main(int ac, char **av)
+// {
+//     try
+//     {
+//         std::vector<ServerConfig> servers;
+//         if (ac == 1)
+//             servers = pars("exemple.conf");
+//         else
+//             servers = pars(av[1]);
+//         for (size_t i = 0; i < servers.size(); i++)
+// 	        std::cout << servers[i];
+//         std::map<int, std::vector<ServerConfig*>> serversByPort = groupServersByPort(servers);
         
-        std::cout << servers.size() << std::endl;
-        ServerConfig tmp = selectServer(80, "example.com", servers);
-        std::cout << tmp.getRoot();
+//         std::cout << servers.size() << std::endl;
+//         ServerConfig tmp = selectServer(80, "example.com", servers);
+//         std::cout << tmp.getRoot();
 
-    }
-    catch (const std::exception &e)
-    {
-        std::cerr << "Error: " << e.what() << std::endl;
-    }
-}
+//     }
+//     catch (const std::exception &e)
+//     {
+//         std::cerr << "Error: " << e.what() << std::endl;
+//     }
+// }
