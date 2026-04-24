@@ -17,4 +17,5 @@
 #include "HttpResponse.hpp"
 
 int findLocation(ServerConfig server, HttpRequest req);
+std::string concatenatePath(ServerConfig server, HttpRequest req);
 HttpResponse Get(HttpRequest req, ServerConfig server);

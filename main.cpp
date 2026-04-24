@@ -25,7 +25,6 @@
 #include <iostream>
 
 int main() {
-	// --- Construction de la config ---
 	ServerConfig server;
 	server.setRoot("/var/www");
 
@@ -41,35 +40,30 @@ int main() {
 	loc3.setPath("/images/photos");
 	server.setLocations(loc3);
 
-	// --- Construction des requêtes de test ---
-	std::string raw1 =
-		"GET /images/photos/cat.jpg HTTP/1.1\r\nHost: localhost\r\n\r\n";
 	HttpRequest req1;
-	req1.addHttpRequest(raw1);
+	std::string request1 =
+		"GET /images/photos/cat.jpg HTTP/1.1\r\nHost: localhost\r\n\r\n";
+	req1.addHttpRequest(request1);
 
-	std::string raw2 =
-		"GET /images/dog.jpg HTTP/1.1\r\nHost: localhost\r\n\r\n";
 	HttpRequest req2;
-	req2.addHttpRequest(raw2);
+	std::string request2 =
+		"GET /images/dog.jpg HTTP/1.1\r\nHost: localhost\r\n\r\n";
+	req2.addHttpRequest(request2);
 
-	std::string raw3 = "GET /about.html HTTP/1.1\r\nHost: localhost\r\n\r\n";
 	HttpRequest req3;
-	req3.addHttpRequest(raw3);
+	std::string request3 =
+		"GET /about.html HTTP/1.1\r\nHost: localhost\r\n\r\n";
+	req3.addHttpRequest(request3);
 
-	std::string raw4 =
-		"GET /images/photoset/pic.jpg HTTP/1.1\r\nHost: localhost\r\n\r\n";
 	HttpRequest req4;
-	req4.addHttpRequest(raw4);
+	std::string request4 =
+		"GET /images/photoset/pic.jpg HTTP/1.1\r\nHost: localhost\r\n\r\n";
+	req4.addHttpRequest(request4);
 
-	// --- Appels à ta fonction ---
-	std::cout << "Test 1 (/images/photos/cat.jpg)  → "
-			  << findLocation(server, req1) << " (attendu: 2)" << std::endl;
-	std::cout << "Test 2 (/images/dog.jpg)          → "
-			  << findLocation(server, req2) << " (attendu: 1)" << std::endl;
-	std::cout << "Test 3 (/about.html)              → "
-			  << findLocation(server, req3) << " (attendu: 0)" << std::endl;
-	std::cout << "Test 4 (/images/photoset/pic.jpg) → "
-			  << findLocation(server, req4) << " (attendu: 1)" << std::endl;
+	std::cout << concatenatePath(server, req1) << std::endl;
+	std::cout << concatenatePath(server, req2) << std::endl;
+	std::cout << concatenatePath(server, req3) << std::endl;
+	std::cout << concatenatePath(server, req4) << std::endl;
 
 	return 0;
 }

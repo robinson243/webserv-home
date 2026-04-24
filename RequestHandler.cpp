@@ -22,7 +22,6 @@ int findLocation(ServerConfig server, HttpRequest req) {
 	std::vector<LocationConfig>::iterator it;
 	std::vector<LocationConfig> loc = server.getLocations();
 	int val = 0;
-	std::cout << "mon uri: " << uri << std::endl;
 	for (it = loc.begin(); it != loc.end(); ++it) {
 		std::string path = (*it).getPath();
 		if (uri.compare(0, path.size(), path) == 0
@@ -31,6 +30,18 @@ int findLocation(ServerConfig server, HttpRequest req) {
 		}
 	}
 	return val;
+}
+
+std::string concatenatePath(ServerConfig server, HttpRequest req) {
+	std::map<std::string, std::string> r = req.getRequest();
+	std::string uri = r["uri"];
+	std::string root = server.getRoot();
+	std::string finalPath = root + uri;
+	if (finalPath.find("//") != std::string::npos) {
+		int pos = finalPath.find("//");
+		finalPath.erase(pos, 1);
+	}
+	return finalPath;
 }
 
 HttpResponse Get(HttpRequest req, ServerConfig server) {
