@@ -11,24 +11,20 @@
 /* ************************************************************************** */
 
 #include "RequestHandler.hpp"
+#include "LocationConfig.hpp"
+#include <algorithm>
 #include <cstring>
 
 int findLocation(ServerConfig server, HttpRequest req) {
-	std::vector<LocationConfig>::iterator it;
 	std::map<std::string, std::string> r = req.getRequest();
 	std::string uri = r["uri"];
-	int i = 0;
-	if (uri.empty())
-		return -1;
-	for (it = server.getLocations().begin(); it != server.getLocations().end();
-		 ++it) {
-		if (std::strncmp((*it).getUrl().c_str(), uri.c_str(), uri.length())
-			== 0) {
-			std::cout << "location url :" << (*it).getUrl() << std::endl;
-		}
-		i++;
+	std::vector<LocationConfig>::iterator it;
+	std::vector<LocationConfig> loc = server.getLocations();
+
+	for (it = loc.begin(); it != loc.end(); ++it) {
+
 	}
-	return i ;
+	return 0;
 }
 
 HttpResponse Get(HttpRequest req, ServerConfig server) {

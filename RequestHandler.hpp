@@ -13,8 +13,8 @@
 #pragma once
 
 #include "ServerConfig.hpp"
-#include "HttpRequest.cpp"
-#include "HttpResponse.cpp"
+#include "HttpRequest.hpp"
+#include "HttpResponse.hpp"
 
 int findLocation(ServerConfig server, HttpRequest req);
 HttpResponse Get(HttpRequest req, ServerConfig server);
