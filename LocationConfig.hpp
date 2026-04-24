@@ -3,20 +3,22 @@
 /*                                                        :::      ::::::::   */
 /*   LocationConfig.hpp                                 :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: romukena <romukena@student.42.fr>          +#+  +:+       +#+        */
+/*   By: ydembele <ydembele@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/04/14 12:17:03 by romukena          #+#    #+#             */
-/*   Updated: 2026/04/14 14:48:02 by romukena         ###   ########.fr       */
+/*   Updated: 2026/04/21 11:36:34 by ydembele         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#pragma once
+#ifndef LOCATIONCONFIG_HPP
+#define LOCATIONCONFIG_HPP
+
 #include <climits>
 #include <iostream>
 #include <map>
 #include <set>
 #include <vector>
-
+#include "ServerConfig.hpp"
 /*
 	---- ARGS ----
 
@@ -49,12 +51,15 @@
 class LocationConfig {
   private:
 	bool _autoindex;
+	bool _has_autoindex;
 	size_t _max_body;
-	int _code;
-	std::string _url;
+	bool	 _has_max_size;
+	int _return_code;
+	std::string _return_url;
+	bool	_has_return;
 	std::string _root;
 	std::string _path;
-	std::string _index;
+	std::vector<std::string> _index;
 	std::string _upload_path;
 	std::string _alias;
 	std::set<std::string> _allow_methods;
@@ -66,12 +71,14 @@ class LocationConfig {
 
 	// Getters
 	bool getAutoindex() const;
+	bool gethasAutoindex() const;
 	size_t getMaxBody() const;
+	bool gethasmaxsize() const;
 	int getCode() const;
 	const std::string &getUrl() const;
 	const std::string &getRoot() const;
 	const std::string &getPath() const;
-	const std::string &getIndex() const;
+	const std::vector<std::string> &getIndex() const;
 	const std::string &getUploadPath() const;
 	const std::string &getAlias() const;
 	const std::set<std::string> &getAllowMethods() const;
@@ -80,15 +87,17 @@ class LocationConfig {
 	// Setters
 	void setAutoindex(bool v);
 	void setMaxBody(size_t v);
+	void sethasmaxsize(bool v);
 	void setCode(int v);
 	void setUrl(const std::string &v);
 	void setRoot(const std::string &v);
 	void setPath(const std::string &v);
-	void setIndex(const std::string &v);
+	void setIndex(const std::vector<std::string> &v);
 	void setUploadPath(const std::string &v);
 	void setAlias(const std::string &v);
 	void setAllowMethods(const std::set<std::string> &v);
 	void setCgiExtension(const std::map<std::string, std::string> &v);
+	void sethasAutoindex(bool v);
 
 	// Helpers
 	void addMethod(const std::string &method);
@@ -97,4 +106,19 @@ class LocationConfig {
 	bool isMethodAllowed(const std::string &method) const;
 	bool hasCgi(const std::string &ext) const;
 	bool hasRedirect() const;
+
 };
+
+std::ostream &operator<<(std::ostream &os, const LocationConfig &loc);
+
+void parseRoot(std::vector<Token>::iterator &it, std::vector<Token>::iterator end, LocationConfig &location);
+void parseAlias(std::vector<Token>::iterator &it, std::vector<Token>::iterator end, LocationConfig &location);
+void parseAutoindex(std::vector<Token>::iterator &it, std::vector<Token>::iterator end, LocationConfig &location);
+void	parseAllowMethods(std::vector<Token>::iterator &it, std::vector<Token>::iterator end, LocationConfig &location);
+void parseIndex(std::vector<Token>::iterator &it, std::vector<Token>::iterator end, LocationConfig &location);
+std::string parseSingleValueDirective(std::vector<Token>::iterator &it, std::vector<Token>::iterator end, const std::string &name);
+void	parseCgiExtension(std::vector<Token>::iterator &it, std::vector<Token>::iterator end, LocationConfig &location);
+LocationConfig parseLocation(std::vector<Token>::iterator &it, std::vector<Token>::iterator end);
+void	parseReturn(std::vector<Token>::iterator &it, std::vector<Token>::iterator end, LocationConfig &location);
+
+#endif
