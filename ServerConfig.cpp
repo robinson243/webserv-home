@@ -6,7 +6,7 @@
 /*   By: ydembele <ydembele@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/04/16 13:40:39 by ydembele          #+#    #+#             */
-/*   Updated: 2026/04/22 16:46:28 by ydembele         ###   ########.fr       */
+/*   Updated: 2026/04/24 17:00:49 by ydembele         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -123,6 +123,7 @@ void validateServer(ServerConfig &server)
 			loc.setIndex(server.getIndex());
 		if (loc.gethasmaxsize() == 0 && server.getHasMaxSize())
 			loc.setMaxBody(server.getBodySizeClient());
+		
 	}
 }
 

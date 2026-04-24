@@ -6,7 +6,7 @@
 /*   By: ydembele <ydembele@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/04/20 19:34:17 by ydembele          #+#    #+#             */
-/*   Updated: 2026/04/22 17:13:48 by ydembele         ###   ########.fr       */
+/*   Updated: 2026/04/24 18:45:00 by ydembele         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -25,10 +25,7 @@ ServerConfig selectServer(int port, std::string host, std::vector<ServerConfig> 
         for (size_t j = 0; j < s[i]->getServerName().size(); j++)
         {
             if (host == s[i]->getServerName()[j])
-            {
-                std::cout << "knlnlk\n";
                 return *s[i];
-            }
         }
     }
     return *s[0];
@@ -37,19 +34,36 @@ ServerConfig selectServer(int port, std::string host, std::vector<ServerConfig> 
 LocationConfig selectLocation(std::string uri, ServerConfig &servers)
 {
     std::vector<LocationConfig> locations = servers.getLocations();
-    LocationConfig *l;
-
-    for (size_t i = 0; i < locations.size(); i++)
+    LocationConfig *l = NULL;
+    if (locations.empty())
     {
         
     }
+    for (size_t i = 0; i < locations.size(); i++)
+    {
+        std::string path = locations[i].getPath();
+
+        if (uri.compare(0, path.size(), path) == 0)
+        {
+            if (!l || path.size() > l->getPath().size())
+                l = &locations[i];
+        }
+    }
+    if (!l)
+        return locations[0]; // fallback
+
+    return *l;
 }
 
-int main()
+int main(int ac, char **av)
 {
     try
     {
-        std::vector<ServerConfig> servers = pars("exemple.conf");
+        std::vector<ServerConfig> servers;
+        if (ac == 1)
+            servers = pars("exemple.conf");
+        else
+            servers = pars(av[1]);
         for (size_t i = 0; i < servers.size(); i++)
 	        std::cout << servers[i];
         std::map<int, std::vector<ServerConfig*>> serversByPort = groupServersByPort(servers);
