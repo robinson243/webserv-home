@@ -16,54 +16,47 @@
 // 	test.print();
 
 // 	return 0;
-// }
-
+// }#include <iostream>
 #include "HttpRequest.hpp"
+#include "HttpResponse.hpp"
+#include "ServerConfig.hpp"
 #include "LocationConfig.hpp"
 #include "RequestHandler.hpp"
-#include "ServerConfig.hpp"
-#include <iostream>
 
-int main() {
-	ServerConfig server;
-	server.setRoot("/var/www");
+int main()
+{
+    std::cerr << "MAIN 1: ServerConfig" << std::endl;
+    ServerConfig server;
+    server.setRoot("./www");
 
-	LocationConfig loc1;
-	loc1.setPath("/");
-	server.setLocations(loc1);
+    std::cerr << "MAIN 2: LocationConfig" << std::endl;
+    LocationConfig loc;
+    std::vector<std::string> indexes;
+    indexes.push_back("index.html");
+    loc.setIndex(indexes);
+    loc.setAutoindex(false);
+    loc.setPath("/");
+    server.setLocations(loc);
 
-	LocationConfig loc2;
-	loc2.setPath("/images");
-	server.setLocations(loc2);
+    std::cerr << "MAIN 3: HttpRequest" << std::endl;
+    HttpRequest req;
 
-	LocationConfig loc3;
-	loc3.setPath("/images/photos");
-	server.setLocations(loc3);
+    std::cerr << "MAIN 4: addHttpRequest" << std::endl;
+    std::string request = "GET /index.html HTTP/1.1\r\nHost: localhost\r\n\r\n";
+    req.addHttpRequest(request);
 
-	HttpRequest req1;
-	std::string request1 =
-		"GET /images/photos/cat.jpg HTTP/1.1\r\nHost: localhost\r\n\r\n";
-	req1.addHttpRequest(request1);
+    std::cerr << "MAIN 5: calling Get()" << std::endl;
+    HttpResponse response = Get(req, server);
 
-	HttpRequest req2;
-	std::string request2 =
-		"GET /images/dog.jpg HTTP/1.1\r\nHost: localhost\r\n\r\n";
-	req2.addHttpRequest(request2);
+    std::cerr << "MAIN 6: response code = " << response.getCode() << std::endl;
 
-	HttpRequest req3;
-	std::string request3 =
-		"GET /about.html HTTP/1.1\r\nHost: localhost\r\n\r\n";
-	req3.addHttpRequest(request3);
+    std::map<std::string, std::string> headers = response.getHeaders();
+    for (std::map<std::string, std::string>::iterator it = headers.begin(); it != headers.end(); ++it)
+        std::cout << it->first << ": " << it->second << std::endl;
 
-	HttpRequest req4;
-	std::string request4 =
-		"GET /images/photoset/pic.jpg HTTP/1.1\r\nHost: localhost\r\n\r\n";
-	req4.addHttpRequest(request4);
+    std::vector<unsigned char> body = response.getBody();
+    std::string str(body.begin(), body.end());
+    std::cout << "\nBody:\n" << str << std::endl;
 
-	std::cout << concatenatePath(server, req1) << std::endl;
-	std::cout << concatenatePath(server, req2) << std::endl;
-	std::cout << concatenatePath(server, req3) << std::endl;
-	std::cout << concatenatePath(server, req4) << std::endl;
-
-	return 0;
+    return 0;
 }

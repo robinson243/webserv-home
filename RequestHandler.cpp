@@ -6,7 +6,7 @@
 /*   By: romukena <romukena@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/04/24 14:36:05 by romukena          #+#    #+#             */
-/*   Updated: 2026/04/25 13:13:31 by romukena         ###   ########.fr       */
+/*   Updated: 2026/04/25 19:09:05 by romukena         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -94,12 +94,25 @@ std::string getContentType(const std::string &path)
 	return "application/octet-stream";
 }
 
-HttpResponse Get(HttpRequest req, ServerConfig server)
+HttpResponse Get(const HttpRequest &req, const ServerConfig &server)
 {
 	struct stat st;
-	int valLocation = findLocation(server, req);
-	std::string path = concatenatePath(server, req);
 	HttpResponse response;
+	std::cerr << "DEBUG 1: findLocation" << std::endl;
+	int valLocation = findLocation(server, req);
+	std::cerr << "DEBUG 2: getLocations" << std::endl;
+	std::vector<LocationConfig> locations = server.getLocations();
+	std::cerr << "DEBUG 3: locations.empty check" << std::endl;
+	std::cerr << "DEBUG 4: getIndex" << std::endl;
+	std::vector<std::string> indexes = locations[valLocation].getIndex();
+	std::cerr << "DEBUG 5: concatenatePath" << std::endl;
+	std::string path = concatenatePath(server, req);
+	std::cerr << "DEBUG 6: after all init" << std::endl;
+	if (locations.empty())
+	{
+		response.addCode(404);
+		return response;
+	}
 	if (stat(path.c_str(), &st) == 0)
 	{
 		if (S_ISREG(st.st_mode))
@@ -119,8 +132,40 @@ HttpResponse Get(HttpRequest req, ServerConfig server)
 		}
 		else if (S_ISDIR(st.st_mode))
 		{
+			// Sous-cas 1 : chercher un fichier index
+			for (std::vector<std::string>::iterator it = indexes.begin(); it != indexes.end(); ++it)
+			{
+				std::string indexPath = path + "/" + *it;
+				struct stat stIndex;
+				if (stat(indexPath.c_str(), &stIndex) == 0 && S_ISREG(stIndex.st_mode))
+				{
+					std::string body;
+					if (!readFileToString(indexPath, body))
+					{
+						response.addCode(403);
+						return response;
+					}
+					std::string contentType = getContentType(indexPath);
+					response.addCode(200);
+					response.addHeadersResponse("Content-Type", contentType);
+					response.addHeadersResponse("Content-Length", std::to_string(body.length()));
+					response.addBodyResponse(body);
+					return response;
+				}
+			}
+			// Sous-cas 2 : autoindex
+			if (locations[valLocation].getAutoindex())
+			{
+				// TODO : générer le listing HTML du dossier
+			}
+			else
+			{
+				// Sous-cas 3 : ni index ni autoindex → 403
+				response.addCode(403);
+				return response;
+			}
 		}
 	}
 	response.addCode(404);
-	return (response);
+	return response;
 }
