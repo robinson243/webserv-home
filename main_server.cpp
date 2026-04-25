@@ -1,12 +1,12 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   main.cpp                                           :+:      :+:    :+:   */
+/*   main_server.cpp                                    :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
 /*   By: ydembele <ydembele@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/04/20 19:34:17 by ydembele          #+#    #+#             */
-/*   Updated: 2026/04/24 18:45:38 by ydembele         ###   ########.fr       */
+/*   Updated: 2026/04/25 18:02:40 by ydembele         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -37,12 +37,15 @@ LocationConfig selectLocation(std::string uri, ServerConfig &servers)
     LocationConfig *l = NULL;
     if (locations.empty())
     {
-        
+        l->setPath("/");
+        l->setRoot(servers.getRoot());
+        l->setIndex(servers.getIndex());
+        l->setMaxBody(servers.getBodySizeClient());
+        return *l;
     }
     for (size_t i = 0; i < locations.size(); i++)
     {
         std::string path = locations[i].getPath();
-
         if (uri.compare(0, path.size(), path) == 0)
         {
             if (!l || path.size() > l->getPath().size())
@@ -50,31 +53,32 @@ LocationConfig selectLocation(std::string uri, ServerConfig &servers)
         }
     }
     if (!l)
-        return locations[0]; // fallback
-
+        return locations[0];
     return *l;
 }
 
-// int main(int ac, char **av)
-// {
-//     try
-//     {
-//         std::vector<ServerConfig> servers;
-//         if (ac == 1)
-//             servers = pars("exemple.conf");
-//         else
-//             servers = pars(av[1]);
-//         for (size_t i = 0; i < servers.size(); i++)
-// 	        std::cout << servers[i];
-//         std::map<int, std::vector<ServerConfig*>> serversByPort = groupServersByPort(servers);
+int main(int ac, char **av)
+{
+    try
+    {
+        std::vector<ServerConfig> servers;
+        if (ac == 1)
+            servers = pars("exemple.conf");
+        else
+            servers = pars(av[1]);
+        // for (size_t i = 0; i < servers.size(); i++)
+	    //     std::cout << servers[i];
+        std::map<int, std::vector<ServerConfig*>> serversByPort = groupServersByPort(servers);
         
-//         std::cout << servers.size() << std::endl;
-//         ServerConfig tmp = selectServer(80, "example.com", servers);
-//         std::cout << tmp.getRoot();
-
-//     }
-//     catch (const std::exception &e)
-//     {
-//         std::cerr << "Error: " << e.what() << std::endl;
-//     }
-// }
+        std::cout << servers.size() << std::endl;
+        ServerConfig tmp = selectServer(90, "example.com", servers);
+        std::cout << tmp;
+        LocationConfig ll = selectLocation("/images", tmp);
+        std::cout << "\n\n\n";
+        std::cout << ll;
+    }
+    catch (const std::exception &e)
+    {
+        std::cerr << "Error: " << e.what() << std::endl;
+    }
+}

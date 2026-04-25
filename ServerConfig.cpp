@@ -6,7 +6,7 @@
 /*   By: ydembele <ydembele@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/04/16 13:40:39 by ydembele          #+#    #+#             */
-/*   Updated: 2026/04/24 17:00:49 by ydembele         ###   ########.fr       */
+/*   Updated: 2026/04/25 17:38:34 by ydembele         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -29,6 +29,7 @@ ServerConfig &ServerConfig::operator=(const ServerConfig &other)
 {
 	if (this != &other)
 	{
+		_listenHost = other._listenHost;
 		_port = other._port;
 		_serverName = other._serverName;
 		_root = other._root;
@@ -60,21 +61,23 @@ std::vector<ServerConfig> pars(const std::string &file)
 	std::string content = LoadConfigFile(file);
 
 	if (content.empty())
-    throw std::runtime_error("Config file is empty or cannot be read");
+    	throw std::runtime_error("Config file is empty or cannot be read");
 	
 	std::vector<ServerConfig> servers;
 	std::vector<Token> tokens = tokenize(content);
 
 	std::vector<Token>::iterator it = tokens.begin();
 	if (it == tokens.end() || it->value != "server")
-    throw std::runtime_error("Config must start with server");
+    	throw std::runtime_error("Config must start with server");
 	while (it != tokens.end())
 	{
-    if (it->value != "server")
-        throw std::runtime_error("Expected 'server' " + it->value);
+    	if (it->value != "server")
+		{
+        	throw std::runtime_error("Expected 'server' " + it->value);
+		}
 		ServerConfig server = parseServer(it, tokens.end());
 		validateServer(server);
-    servers.push_back(server);
+    	servers.push_back(server);
 	}
 	if (servers.empty())
 		throw std::runtime_error("Servers empty");
@@ -156,7 +159,7 @@ void parseDirective(std::vector<Token>::iterator &it, std::vector<Token>::iterat
 	switch (i)
 	{
 		case 0:
-			server.setPort(findPort(it, end));
+			findPort(it, end, server);
 			break;
 		case 1:
 		{
@@ -290,29 +293,52 @@ std::string findRoot(std::vector<Token>::iterator &it, std::vector<Token>::itera
 	return s;
 }
 
-unsigned int findPort(std::vector<Token>::iterator &it, std::vector<Token>::iterator end)
+void findPort(std::vector<Token>::iterator &it,
+              std::vector<Token>::iterator end,
+              ServerConfig &server)
 {
-	++it;
-	if (it == end)
-		throw std::runtime_error("listen: missing port");
-	if ((*it == "}" && !it->in_quotes) || (*it == "{" && !it->in_quotes))
-		throw std::runtime_error("listen: brace in port forbidden");
-	int port = 0;
-	try
-	{
-		port = std::stoi(it->value);
-	}
-	catch (...)
-	{
-		throw std::runtime_error("listen: invalid port format");
-	}
-	if (port < 1 || port > 65535)
-		throw std::runtime_error("listen: invalid port range [1-65535]");
-	++it;
-	if (it == end || *it != ";" || it->in_quotes)
-    throw std::runtime_error("listen: expected ';'");
-	++it; // Skip ;
-	return static_cast<unsigned int>(port);
+    ++it;
+
+    if (it == end)
+        throw std::runtime_error("listen: missing value");
+
+    if ((*it == "}" && !it->in_quotes) || (*it == "{" && !it->in_quotes))
+        throw std::runtime_error("listen: invalid token");
+
+    std::string value = it->value;
+    std::string host = "0.0.0.0";
+    std::string portStr;
+    size_t colon = value.find(':');
+    if (colon != std::string::npos)
+    {
+        host = value.substr(0, colon);
+        portStr = value.substr(colon + 1);
+
+        if (host.empty() || portStr.empty())
+            throw std::runtime_error("listen: invalid host:port format");
+        server.setListenHost(host);
+    }
+    else
+    {
+        portStr = value;
+        server.setListenHost("0.0.0.0");
+    }
+    int port = 0;
+    try
+    {
+        port = std::stoi(portStr);
+    }
+    catch (...)
+    {
+        throw std::runtime_error("listen: invalid port format");
+    }
+    if (port < 1 || port > 65535)
+        throw std::runtime_error("listen: invalid port range [1-65535]");
+    ++it;
+    if (it == end || *it != ";" || it->in_quotes)
+        throw std::runtime_error("listen: expected ';'");
+    ++it; // skip ;
+    server.setPort((unsigned int)port);
 }
 
 std::vector<std::string> findServerName(std::vector<Token>::iterator &it, std::vector<Token>::iterator end)
@@ -472,6 +498,11 @@ const std::vector<LocationConfig>& ServerConfig::getLocations() const
 std::vector<LocationConfig>& ServerConfig::getLocations()
 {
 	return _locations;
+}
+
+void	ServerConfig::setListenHost(std::string s)
+{
+	_listenHost.push_back(s);
 }
 
 void	ServerConfig::setPort(unsigned int port)

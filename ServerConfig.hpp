@@ -6,7 +6,7 @@
 /*   By: ydembele <ydembele@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/04/14 15:01:30 by romukena          #+#    #+#             */
-/*   Updated: 2026/04/22 15:49:49 by ydembele         ###   ########.fr       */
+/*   Updated: 2026/04/25 17:37:40 by ydembele         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -20,6 +20,7 @@
 #include <vector>
 
 class LocationConfig;
+
 
 struct Token
 {
@@ -37,6 +38,7 @@ class ServerConfig {
 private:
 	std::vector<std::string> _data;
 	std::vector<unsigned int> _port;
+	std::vector<std::string> _listenHost;
 	std::vector<std::string> _serverName;
 	std::string _root;
 	std::vector<std::string> _index;
@@ -62,6 +64,7 @@ private:
 	std::vector<LocationConfig>& getLocations();
 	const std::vector<LocationConfig>& getLocations() const;
 
+	void	setListenHost(std::string s);
 	void	setPort(unsigned int port);
 	void	setServerName(std::vector<std::string> Servername);
 	void	setRoot(std::string root);
@@ -79,7 +82,7 @@ std::string	LoadConfigFile(const std::string &file);
 std::vector<ServerConfig> pars(const std::string &file);
 ServerConfig parseServer(std::vector<Token>::iterator &it, std::vector<Token>::iterator end);
 void parseDirective(std::vector<Token>::iterator &it, std::vector<Token>::iterator end, ServerConfig &server);
-unsigned int findPort(std::vector<Token>::iterator &it, std::vector<Token>::iterator end);
+void findPort(std::vector<Token>::iterator &it, std::vector<Token>::iterator end, ServerConfig &server);
 std::vector<std::string> findServerName(std::vector<Token>::iterator &it, std::vector<Token>::iterator end);
 std::string findRoot(std::vector<Token>::iterator &it, std::vector<Token>::iterator end);
 std::vector<std::string> findIndex(std::vector<Token>::iterator &it, std::vector<Token>::iterator end);
