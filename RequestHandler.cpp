@@ -6,7 +6,7 @@
 /*   By: romukena <romukena@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/04/24 14:36:05 by romukena          #+#    #+#             */
-/*   Updated: 2026/04/25 13:09:08 by romukena         ###   ########.fr       */
+/*   Updated: 2026/04/25 13:13:31 by romukena         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -53,16 +53,15 @@ std::string concatenatePath(ServerConfig server, HttpRequest req)
 	return finalPath;
 }
 
-std::string readFileToString(const std::string &path)
+bool readFileToString(const std::string &path, std::string &content)
 {
-	std::ifstream file(path);
+	std::ifstream file(path.c_str());
 	if (!file.is_open())
-	{
-		return ""; // Gérer l'erreur d'ouverture
-	}
+		return false;
 	std::ostringstream ss;
 	ss << file.rdbuf();
-	return ss.str();
+	content = ss.str();
+	return true;
 }
 
 std::string getContentType(const std::string &path)
@@ -105,9 +104,13 @@ HttpResponse Get(HttpRequest req, ServerConfig server)
 	{
 		if (S_ISREG(st.st_mode))
 		{
-			std::string body = readFileToString(path);
+			std::string body;
+			if (!readFileToString(path, body))
+			{
+				response.addCode(403);
+				return response;
+			}
 			std::string contentType = getContentType(path);
-
 			response.addCode(200);
 			response.addHeadersResponse("Content-Type", contentType);
 			response.addHeadersResponse("Content-Length", std::to_string(body.length()));
