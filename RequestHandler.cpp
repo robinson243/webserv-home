@@ -6,7 +6,7 @@
 /*   By: romukena <romukena@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/04/24 14:36:05 by romukena          #+#    #+#             */
-/*   Updated: 2026/04/26 23:54:14 by romukena         ###   ########.fr       */
+/*   Updated: 2026/04/27 00:49:57 by romukena         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -44,6 +44,8 @@ std::string concatenatePath(ServerConfig server, HttpRequest req)
 {
 	std::map<std::string, std::string> r = req.getRequest();
 	std::string uri = r["uri"];
+	if (uri.find("/..") != std::string::npos)
+		return "";
 	std::string root = server.getRoot();
 	std::string finalPath = root + uri;
 
@@ -226,4 +228,48 @@ HttpResponse Get(const HttpRequest &req, const ServerConfig &server)
 	}
 	response.addCode(404);
 	return response;
+}
+
+HttpResponse Delete(const HttpRequest &req, const ServerConfig &server)
+{
+	struct stat st;
+	HttpResponse response;
+	int valLocation = findLocation(server, req);
+	std::vector<LocationConfig> locations = server.getLocations();
+	if (locations.empty())
+	{
+		response.addCode(404);
+		return response;
+	}
+	if (!locations[valLocation].isMethodAllowed("DELETE"))
+	{
+		response.addCode(405);
+		return response;
+	}
+	std::string path = concatenatePath(server, req);
+	if (path == "")
+	{
+		response.addCode(403);
+		return response;
+	}
+	if (stat(path.c_str(), &st) == -1)
+	{
+		response.addCode(404);
+		return response;
+	}
+	if (S_ISDIR(st.st_mode))
+	{
+		response.addCode(403);
+		return response;
+	}
+	if (remove(path.c_str()) == 0)
+	{
+		response.addCode(204);
+		return response;
+	}
+	else
+	{
+		response.addCode(403);
+		return response;
+	}
 }

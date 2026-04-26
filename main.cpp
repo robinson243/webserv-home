@@ -26,7 +26,7 @@
 #include "ServerConfig.hpp"
 #include "LocationConfig.hpp"
 
-HttpResponse Get(const HttpRequest &req, const ServerConfig &server);
+HttpResponse Delete(const HttpRequest &req, const ServerConfig &server);
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -39,83 +39,54 @@ static void mkfile(const std::string &path, const std::string &content)
     f.close();
 }
 
-static void mkfile_empty(const std::string &path)
+static bool fileExists(const std::string &path)
 {
-    std::ofstream f(path.c_str());
-    f.close();
+    struct stat st;
+    return stat(path.c_str(), &st) == 0;
 }
 
 static void setup()
 {
     mk("./www");
-    mk("./www/files");
-    mk("./www/empty_dir");
-    mk("./www/dir_index");
-    mk("./www/dir_autoindex");
-    mk("./www/dir_both");         // index ET autoindex activé
-    mk("./www/nested");
-    mk("./www/nested/sub");
-    mk("./www/no_read");          // dossier sans index ni autoindex
+    mk("./www/del");
+    mk("./www/del/subdir");
 
-    // Fichiers normaux
-    mkfile("./www/files/hello.html",  "<html><body>Hello</body></html>");
-    mkfile("./www/files/style.css",   "body { color: red; }");
-    mkfile("./www/files/data.json",   "{\"key\":\"value\"}");
-    mkfile("./www/files/image.jpg",   "FAKEJPEG");
-    mkfile_empty("./www/files/empty.html");
+    mkfile("./www/del/target.html",    "to delete");
+    mkfile("./www/del/protected.html", "protected");
+    mkfile("./www/del/double.html",    "double delete");
 
-    // Index
-    mkfile("./www/dir_index/index.html", "<html><body>Index</body></html>");
-    mkfile("./www/dir_both/index.html",  "<html><body>Both</body></html>");
-
-    // Fichiers dans autoindex
-    mkfile("./www/dir_autoindex/file1.txt", "hello");
-    mkfile("./www/dir_autoindex/file2.txt", "world");
-
-    // Nested
-    mkfile("./www/nested/sub/deep.html", "<html>deep</html>");
-
-    // Fichier sans permission de lecture
-    mkfile("./www/no_read/secret.html", "secret");
-    chmod("./www/no_read/secret.html", 0000);
+    chmod("./www/del/protected.html", 0444);
 }
 
-static HttpRequest makeRequest(const std::string &uri)
+static HttpRequest makeRequest(const std::string &method, const std::string &uri)
 {
     HttpRequest req;
-    std::string raw = "GET " + uri + " HTTP/1.1\r\nHost: localhost\r\n\r\n";
+    std::string raw = method + " " + uri + " HTTP/1.1\r\nHost: localhost\r\n\r\n";
     req.addHttpRequest(raw);
     return req;
 }
 
-static LocationConfig makeLocation(const std::string &root,
-                                   const std::string &index,
-                                   bool autoindex)
+static LocationConfig makeLocation(const std::string &root, bool allowDelete)
 {
     LocationConfig loc;
     loc.setPath("/");
     loc.setRoot(root);
     loc.sethasAutoindex(true);
-    loc.setAutoindex(autoindex);
-    if (!index.empty())
-    {
-        std::vector<std::string> idx;
-        idx.push_back(index);
-        loc.setIndex(idx);
-    }
+    loc.setAutoindex(false);
+
     std::set<std::string> methods;
     methods.insert("GET");
+    if (allowDelete)
+        methods.insert("DELETE");
     loc.setAllowMethods(methods);
     return loc;
 }
 
-static ServerConfig makeServer(const std::string &root,
-                               const std::string &index,
-                               bool autoindex)
+static ServerConfig makeServer(const std::string &root, bool allowDelete)
 {
     ServerConfig server;
     server.setRoot(root);
-    server.setLocations(makeLocation(root, index, autoindex));
+    server.setLocations(makeLocation(root, allowDelete));
     return server;
 }
 
@@ -141,113 +112,83 @@ static void check(const std::string &label, const HttpResponse &resp, int expect
     }
 }
 
+static void checkAlsoDeleted(const std::string &label, const HttpResponse &resp,
+                              int expected, const std::string &path)
+{
+    check(label, resp, expected);
+    if (expected == 204 && fileExists(path))
+    {
+        std::cout << "\033[31m✗ FAIL\033[0m [" << label << " → fichier encore présent sur disque]" << std::endl;
+        failed++;
+        passed--;
+    }
+    else if (expected == 204)
+    {
+        std::cout << "\033[32m✓ OK  \033[0m [" << label << " → fichier bien supprimé du disque]" << std::endl;
+        passed++;
+    }
+}
+
 // ─── Tests ────────────────────────────────────────────────────────────────────
 
 int main()
 {
     setup();
 
-    std::cout << "\n=== FICHIERS STATIQUES ===" << std::endl;
+    std::cout << "\n=== SUPPRESSION NORMALE ===" << std::endl;
 
-    // Basique
-    check("T01 fichier .html existant",
-        Get(makeRequest("/files/hello.html"),
-            makeServer("./www", "", false)), 200);
+    // T01 — Fichier existant, DELETE autorisé → 204 + vérifie sur disque
+    checkAlsoDeleted("T01 suppression normale",
+        Delete(makeRequest("DELETE", "/del/target.html"),
+               makeServer("./www", true)),
+        204, "./www/del/target.html");
 
-    check("T02 fichier .css existant",
-        Get(makeRequest("/files/style.css"),
-            makeServer("./www", "", false)), 200);
-
-    check("T03 fichier .json existant",
-        Get(makeRequest("/files/data.json"),
-            makeServer("./www", "", false)), 200);
-
-    check("T04 fichier .jpg existant",
-        Get(makeRequest("/files/image.jpg"),
-            makeServer("./www", "", false)), 200);
-
-    check("T05 fichier vide (0 octets)",
-        Get(makeRequest("/files/empty.html"),
-            makeServer("./www", "", false)), 200);
-
-    // Inexistants
-    check("T06 fichier inexistant",
-        Get(makeRequest("/files/ghost.html"),
-            makeServer("./www", "", false)), 404);
-
-    check("T07 URI completement inventee",
-        Get(makeRequest("/nope/nope/nope.html"),
-            makeServer("./www", "", false)), 404);
-
-    check("T08 extension inconnue inexistante",
-        Get(makeRequest("/files/file.xyz"),
-            makeServer("./www", "", false)), 404);
-
-    // Permissions
-    check("T09 fichier sans permission lecture",
-        Get(makeRequest("/no_read/secret.html"),
-            makeServer("./www", "", false)), 403);
+    // T02 — Supprimer deux fois le même fichier → 404 au 2e appel
+    mkfile("./www/del/double.html", "double");
+    Delete(makeRequest("DELETE", "/del/double.html"), makeServer("./www", true));
+    check("T02 double suppression → 404 au 2e appel",
+        Delete(makeRequest("DELETE", "/del/double.html"),
+               makeServer("./www", true)), 404);
 
 
-    std::cout << "\n=== DOSSIERS + INDEX ===" << std::endl;
+    std::cout << "\n=== ERREURS CLIENT ===" << std::endl;
 
-    check("T10 dossier avec index.html",
-        Get(makeRequest("/dir_index"),
-            makeServer("./www", "index.html", false)), 200);
+    // T03 — Fichier inexistant → 404
+    check("T03 fichier inexistant",
+        Delete(makeRequest("DELETE", "/del/ghost.html"),
+               makeServer("./www", true)), 404);
 
-    check("T11 dossier avec index.html + slash final",
-        Get(makeRequest("/dir_index/"),
-            makeServer("./www", "index.html", false)), 200);
+    // T04 — DELETE non autorisé dans la location → 405
+    check("T04 methode DELETE non autorisee",
+        Delete(makeRequest("DELETE", "/del/target.html"),
+               makeServer("./www", false)), 405);
 
-    check("T12 index configure mais inexistant dans ce dossier",
-        Get(makeRequest("/dir_autoindex"),
-            makeServer("./www", "index.html", false)), 403);
+    // T05 — Cible est un dossier → 403
+    check("T05 cible est un dossier",
+        Delete(makeRequest("DELETE", "/del/subdir"),
+               makeServer("./www", true)), 403);
 
-    check("T13 dossier avec index ET autoindex → index prioritaire",
-        Get(makeRequest("/dir_both"),
-            makeServer("./www", "index.html", true)), 200);
-
-
-    std::cout << "\n=== AUTOINDEX ===" << std::endl;
-
-    check("T14 dossier sans index, autoindex on → 200",
-        Get(makeRequest("/dir_autoindex"),
-            makeServer("./www", "", true)), 200);
-
-    check("T15 dossier vide, autoindex on → 200",
-        Get(makeRequest("/empty_dir"),
-            makeServer("./www", "", true)), 200);
-
-    check("T16 dossier sans index, autoindex off → 403",
-        Get(makeRequest("/dir_autoindex"),
-            makeServer("./www", "", false)), 403);
+    // T06 — Fichier sans permission de suppression → 403
+    check("T06 fichier protege en lecture seule",
+        Delete(makeRequest("DELETE", "/del/protected.html"),
+               makeServer("./www", true)), 403);
 
 
-    std::cout << "\n=== CAS LIMITES ===" << std::endl;
+    std::cout << "\n=== SECURITE ===" << std::endl;
 
-    check("T17 URI racine '/' avec index",
-        Get(makeRequest("/"),
-            makeServer("./www/dir_index", "index.html", false)), 200);
+    // T07 — Path traversal → 403
+    check("T07 path traversal /../../../etc/passwd",
+        Delete(makeRequest("DELETE", "/../../../etc/passwd"),
+               makeServer("./www", true)), 403);
 
-    check("T18 URI racine '/' sans index, autoindex on",
-        Get(makeRequest("/"),
-            makeServer("./www/dir_autoindex", "", true)), 200);
-
-    check("T19 fichier profondement imbrique",
-        Get(makeRequest("/nested/sub/deep.html"),
-            makeServer("./www", "", false)), 200);
-
-    check("T20 URI avec double slash //files//hello.html",
-        Get(makeRequest("//files//hello.html"),
-            makeServer("./www", "", false)), 404);
-
-    check("T21 dossier inexistant, autoindex on → 404",
-        Get(makeRequest("/fantome/"),
-            makeServer("./www", "", true)), 404);
+    // T08 — URI inventée hors root → 404
+    check("T08 URI hors root inexistante",
+        Delete(makeRequest("DELETE", "/nope/nope.html"),
+               makeServer("./www", true)), 404);
 
 
-    // Nettoyage permission pour ne pas laisser de fichier inaccessible
-    chmod("./www/no_read/secret.html", 0644);
+    // Nettoyage permissions
+    chmod("./www/del/protected.html", 0644);
 
     std::cout << "\n─────────────────────────────────" << std::endl;
     std::cout << "Résultat : " << passed << "/" << (passed + failed)
