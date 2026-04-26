@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   ServerConfig.cpp                                   :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: ydembele <ydembele@student.42.fr>          +#+  +:+       +#+        */
+/*   By: romukena <romukena@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/04/16 13:40:39 by ydembele          #+#    #+#             */
-/*   Updated: 2026/04/24 17:00:49 by ydembele         ###   ########.fr       */
+/*   Updated: 2026/04/26 12:02:34 by romukena         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,9 +14,9 @@
 
 #include <limits>
 #include <fstream>
-#include <array>
 #include <string>
 #include "LocationConfig.hpp"
+#include <cstdlib>
 
 ServerConfig::ServerConfig()
 {
@@ -81,9 +81,9 @@ std::vector<ServerConfig> pars(const std::string &file)
 	return servers;
 }
 
-std::map<int, std::vector<ServerConfig*>> groupServersByPort(const std::vector<ServerConfig> &servers)
+std::map<int, std::vector<ServerConfig*> > groupServersByPort(const std::vector<ServerConfig> &servers)
 {
-	std::map<int, std::vector<ServerConfig*>> serversByPort;
+	std::map<int, std::vector<ServerConfig*> > serversByPort;
 	for (size_t i = 0; i < servers.size(); i++)
 	{
 		const std::vector<unsigned int> port = servers[i].getPort();
@@ -146,7 +146,7 @@ ServerConfig parseServer(std::vector<Token>::iterator &it, std::vector<Token>::i
 
 void parseDirective(std::vector<Token>::iterator &it, std::vector<Token>::iterator end, ServerConfig &server)
 {
-	std::array<std::string, 7> directives = {"listen", "server_name", "root", "index", "error_page", "client_max_body_size", "location"};
+	const std::string directives[]  = {"listen", "server_name", "root", "index", "error_page", "client_max_body_size", "location"};
 	int i = 0;
 	while (i < 7 && it->value != directives[i])
 		i++;
@@ -211,7 +211,7 @@ size_t findSize(std::vector<Token>::iterator &it, std::vector<Token>::iterator e
 		throw std::runtime_error("client_max_body_size: missing value");
 	if (!isNumber(it->value))
     throw std::runtime_error("client_max_body_size: Invalid body size");
-	size_t value = std::strtoul((it->value).c_str(), NULL, 10);
+	size_t value = strtoul((it->value).c_str(), NULL, 10);
 	if (value == 0)
     throw std::runtime_error("client_max_body_size: Body size must be > 0");
 	++it;
@@ -231,7 +231,7 @@ void	parseErrorPage(std::vector<Token>::iterator &it, std::vector<Token>::iterat
 		throw std::runtime_error("Error page: missing value");
 	try
 	{
-		code = std::stoi(it->value);
+		code = atoi(it->value.c_str());
 	}
 	catch (...)
 	{
@@ -300,7 +300,7 @@ unsigned int findPort(std::vector<Token>::iterator &it, std::vector<Token>::iter
 	int port = 0;
 	try
 	{
-		port = std::stoi(it->value);
+		port = atoi(it->value.c_str());
 	}
 	catch (...)
 	{
@@ -340,7 +340,7 @@ std::string	LoadConfigFile(const std::string &file)
 {
 	std::string	data;
 	std::string line;
-	std::ifstream f(file);
+	std::ifstream f(file.c_str());
 
 	if (!f.is_open())
 		throw std::runtime_error("Cannot open file");

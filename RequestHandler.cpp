@@ -6,7 +6,7 @@
 /*   By: romukena <romukena@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/04/24 14:36:05 by romukena          #+#    #+#             */
-/*   Updated: 2026/04/25 19:09:05 by romukena         ###   ########.fr       */
+/*   Updated: 2026/04/26 12:01:17 by romukena         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -98,16 +98,10 @@ HttpResponse Get(const HttpRequest &req, const ServerConfig &server)
 {
 	struct stat st;
 	HttpResponse response;
-	std::cerr << "DEBUG 1: findLocation" << std::endl;
 	int valLocation = findLocation(server, req);
-	std::cerr << "DEBUG 2: getLocations" << std::endl;
 	std::vector<LocationConfig> locations = server.getLocations();
-	std::cerr << "DEBUG 3: locations.empty check" << std::endl;
-	std::cerr << "DEBUG 4: getIndex" << std::endl;
 	std::vector<std::string> indexes = locations[valLocation].getIndex();
-	std::cerr << "DEBUG 5: concatenatePath" << std::endl;
 	std::string path = concatenatePath(server, req);
-	std::cerr << "DEBUG 6: after all init" << std::endl;
 	if (locations.empty())
 	{
 		response.addCode(404);
@@ -126,7 +120,9 @@ HttpResponse Get(const HttpRequest &req, const ServerConfig &server)
 			std::string contentType = getContentType(path);
 			response.addCode(200);
 			response.addHeadersResponse("Content-Type", contentType);
-			response.addHeadersResponse("Content-Length", std::to_string(body.length()));
+			std::ostringstream oss;
+			oss << body.length();
+			response.addHeadersResponse("Content-Length", oss.str());
 			response.addBodyResponse(body);
 			return response;
 		}
@@ -148,7 +144,9 @@ HttpResponse Get(const HttpRequest &req, const ServerConfig &server)
 					std::string contentType = getContentType(indexPath);
 					response.addCode(200);
 					response.addHeadersResponse("Content-Type", contentType);
-					response.addHeadersResponse("Content-Length", std::to_string(body.length()));
+					std::ostringstream oss;
+					oss << body.length();
+					response.addHeadersResponse("Content-Length", oss.str());
 					response.addBodyResponse(body);
 					return response;
 				}

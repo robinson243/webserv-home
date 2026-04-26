@@ -6,13 +6,13 @@
 /*   By: romukena <romukena@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/04/16 14:09:04 by romukena          #+#    #+#             */
-/*   Updated: 2026/04/25 13:06:17 by romukena         ###   ########.fr       */
+/*   Updated: 2026/04/26 11:25:39 by romukena         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "HttpResponse.hpp"
 
-HttpResponse::HttpResponse() : _code(-1), _version(NULL), _message(NULL)
+HttpResponse::HttpResponse() : _code(-1)
 {
 }
 

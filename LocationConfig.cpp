@@ -3,16 +3,16 @@
 /*                                                        :::      ::::::::   */
 /*   LocationConfig.cpp                                 :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: ydembele <ydembele@student.42.fr>          +#+  +:+       +#+        */
+/*   By: romukena <romukena@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/04/14 13:44:36 by romukena          #+#    #+#             */
-/*   Updated: 2026/04/21 17:58:11 by ydembele         ###   ########.fr       */
+/*   Updated: 2026/04/26 12:02:03 by romukena         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "LocationConfig.hpp"
 #include <limits>
-#include <array>
+#include <cstdlib>
 
 LocationConfig::LocationConfig()
 	: _autoindex(false), _has_autoindex(false), _max_body(std::numeric_limits<std::size_t>::max()),
@@ -93,7 +93,7 @@ void	parseReturn(std::vector<Token>::iterator &it, std::vector<Token>::iterator 
 	++it;
 	if (it == end)
 		throw std::runtime_error("Return: missing value");
-	code = std::stoi(it->value);
+	code = atoi(it->value.c_str());
 	if (code < 100 || code > 599)
 		throw std::runtime_error("Return: invalid value");
 	++it;

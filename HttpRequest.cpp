@@ -6,11 +6,12 @@
 /*   By: romukena <romukena@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/04/14 15:16:54 by romukena          #+#    #+#             */
-/*   Updated: 2026/04/24 14:11:21 by romukena         ###   ########.fr       */
+/*   Updated: 2026/04/26 12:04:39 by romukena         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "HttpRequest.hpp"
+#include <cstdlib>
 
 HttpRequest::HttpRequest() : _isValid(false), _code(-1) {
 }
@@ -35,8 +36,6 @@ const std::map<std::string, std::string> &HttpRequest::getRequest() const {
 }
 
 void HttpRequest::addBody(std::string &element) {
-	if (&element == NULL)
-		return;
 	_body.insert(_body.end(), element.begin(), element.end());
 }
 
@@ -166,7 +165,7 @@ bool HttpRequest::validateBody(std::string &e) {
 
 	if (!isNumber(contentLength))
 		return false;
-	int numContentLength = std::stoi(contentLength);
+	size_t numContentLength = atoi(contentLength.c_str());
 	if (numContentLength != e.length()) {
 		_code = 400;
 		return false;
