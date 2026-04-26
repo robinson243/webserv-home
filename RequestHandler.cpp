@@ -6,7 +6,7 @@
 /*   By: romukena <romukena@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/04/24 14:36:05 by romukena          #+#    #+#             */
-/*   Updated: 2026/04/26 12:01:17 by romukena         ###   ########.fr       */
+/*   Updated: 2026/04/26 23:32:27 by romukena         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -20,6 +20,7 @@
 #include <fstream>
 #include <sstream>
 #include <string>
+#include <dirent.h>
 
 int findLocation(ServerConfig server, HttpRequest req)
 {
@@ -45,12 +46,29 @@ std::string concatenatePath(ServerConfig server, HttpRequest req)
 	std::string uri = r["uri"];
 	std::string root = server.getRoot();
 	std::string finalPath = root + uri;
-	if (finalPath.find("//") != std::string::npos)
+
+	size_t p = finalPath.find("//");
+	while (p != std::string::npos)
 	{
-		int pos = finalPath.find("//");
-		finalPath.erase(pos, 1);
+		finalPath.erase(p, 1);
+		p = finalPath.find("//");
 	}
-	return finalPath;
+
+	char *resolvedRoot = realpath(root.c_str(), NULL);
+	if (!resolvedRoot)
+		return "";
+	std::string absRoot(resolvedRoot);
+	free(resolvedRoot);
+	char *resolvedPath = realpath(finalPath.c_str(), NULL);
+	if (!resolvedPath)
+		return finalPath;
+
+	std::string absPath(resolvedPath);
+	free(resolvedPath);
+	if (absPath.find(absRoot) != 0)
+		return "";
+
+	return absPath;
 }
 
 bool readFileToString(const std::string &path, std::string &content)
@@ -100,13 +118,13 @@ HttpResponse Get(const HttpRequest &req, const ServerConfig &server)
 	HttpResponse response;
 	int valLocation = findLocation(server, req);
 	std::vector<LocationConfig> locations = server.getLocations();
-	std::vector<std::string> indexes = locations[valLocation].getIndex();
-	std::string path = concatenatePath(server, req);
 	if (locations.empty())
 	{
 		response.addCode(404);
 		return response;
 	}
+	std::vector<std::string> indexes = locations[valLocation].getIndex();
+	std::string path = concatenatePath(server, req);
 	if (stat(path.c_str(), &st) == 0)
 	{
 		if (S_ISREG(st.st_mode))
@@ -151,14 +169,56 @@ HttpResponse Get(const HttpRequest &req, const ServerConfig &server)
 					return response;
 				}
 			}
-			// Sous-cas 2 : autoindex
+
 			if (locations[valLocation].getAutoindex())
 			{
-				// TODO : générer le listing HTML du dossier
+				DIR *dir = opendir(path.c_str());
+				if (!dir)
+				{
+					response.addCode(403);
+					return response;
+				}
+
+				std::string uri = req.getRequest().at("uri");
+				std::string html;
+				html += "<html><head><title>Index of " + uri + "</title></head><body>";
+				html += "<h1>Index of " + uri + "</h1><ul>";
+
+				struct dirent *entry;
+				while ((entry = readdir(dir)) != NULL)
+				{
+					std::string name = entry->d_name;
+					if (name == ".")
+						continue;
+
+					std::string fullPath = path + "/" + name;
+					struct stat stEntry;
+					std::string href = name;
+					std::string display = name;
+
+					if (stat(fullPath.c_str(), &stEntry) == 0 && S_ISDIR(stEntry.st_mode))
+					{
+						href = name + "/";
+						display = name + "/";
+					}
+
+					html += "<li><a href=\"" + href + "\">" + display + "</a></li>";
+				}
+				closedir(dir);
+
+				html += "</ul></body></html>";
+
+				std::ostringstream oss;
+				oss << html.length();
+
+				response.addCode(200);
+				response.addHeadersResponse("Content-Type", "text/html");
+				response.addHeadersResponse("Content-Length", oss.str());
+				response.addBodyResponse(html);
+				return response;
 			}
 			else
 			{
-				// Sous-cas 3 : ni index ni autoindex → 403
 				response.addCode(403);
 				return response;
 			}
