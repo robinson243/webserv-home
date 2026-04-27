@@ -6,7 +6,7 @@
 /*   By: romukena <romukena@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/04/24 14:36:05 by romukena          #+#    #+#             */
-/*   Updated: 2026/04/27 00:49:57 by romukena         ###   ########.fr       */
+/*   Updated: 2026/04/28 00:30:31 by romukena         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -270,6 +270,26 @@ HttpResponse Delete(const HttpRequest &req, const ServerConfig &server)
 	else
 	{
 		response.addCode(403);
+		return response;
+	}
+}
+
+HttpResponse POST(const HttpRequest &req, const ServerConfig &server)
+{
+	struct stat st;
+	HttpResponse response;
+	int valLocation = findLocation(server, req);
+	std::vector<LocationConfig> locations = server.getLocations();
+	std::vector<unsigned char> body = req.getBody();
+	
+	if (locations.empty())
+	{
+		response.addCode(404);
+		return response;
+	}
+	if (!locations[valLocation].isMethodAllowed("POST"))
+	{
+		response.addCode(405);
 		return response;
 	}
 }
