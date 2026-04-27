@@ -6,7 +6,7 @@
 /*   By: ydembele <ydembele@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/04/16 13:40:39 by ydembele          #+#    #+#             */
-/*   Updated: 2026/04/25 17:38:34 by ydembele         ###   ########.fr       */
+/*   Updated: 2026/04/27 19:25:06 by ydembele         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -27,22 +27,25 @@ ServerConfig::ServerConfig()
 
 ServerConfig &ServerConfig::operator=(const ServerConfig &other)
 {
-	if (this != &other)
-	{
-		_listenHost = other._listenHost;
-		_port = other._port;
-		_serverName = other._serverName;
-		_root = other._root;
-		_index = other._index;
-		_clientMaxBodySize = other._clientMaxBodySize;
-		_errorPage = other._errorPage;
-		_locations = other._locations;
-	}
-	return *this;
+    if (this != &other)
+    {
+        _listenHost = other._listenHost;
+        _port = other._port;
+        _serverName = other._serverName;
+        _root = other._root;
+        _index = other._index;
+        _clientMaxBodySize = other._clientMaxBodySize;
+        _errorPage = other._errorPage;
+        _locations = other._locations;
+        _hasMaxSize = other._hasMaxSize;
+        _data = other._data;
+    }
+    return *this;
 }
 
 ServerConfig::ServerConfig(const ServerConfig &other)
 {
+    _listenHost = other._listenHost;
     _port = other._port;
     _serverName = other._serverName;
     _root = other._root;
@@ -50,6 +53,8 @@ ServerConfig::ServerConfig(const ServerConfig &other)
     _clientMaxBodySize = other._clientMaxBodySize;
     _errorPage = other._errorPage;
     _locations = other._locations;
+    _hasMaxSize = other._hasMaxSize;
+    _data = other._data;
 }
 
 ServerConfig::~ServerConfig()
@@ -293,15 +298,11 @@ std::string findRoot(std::vector<Token>::iterator &it, std::vector<Token>::itera
 	return s;
 }
 
-void findPort(std::vector<Token>::iterator &it,
-              std::vector<Token>::iterator end,
-              ServerConfig &server)
+void findPort(std::vector<Token>::iterator &it, std::vector<Token>::iterator end, ServerConfig &server)
 {
     ++it;
-
     if (it == end)
         throw std::runtime_error("listen: missing value");
-
     if ((*it == "}" && !it->in_quotes) || (*it == "{" && !it->in_quotes))
         throw std::runtime_error("listen: invalid token");
 
@@ -454,6 +455,10 @@ void	ServerConfig::parsConfig(std::vector<std::string> &data)
 	
 }
 
+std::vector<std::string> ServerConfig::getListenHosts() const
+{
+	return _listenHost;
+}
 
 std::vector<unsigned int> ServerConfig::getPort() const
 {
@@ -502,6 +507,7 @@ std::vector<LocationConfig>& ServerConfig::getLocations()
 
 void	ServerConfig::setListenHost(std::string s)
 {
+	
 	_listenHost.push_back(s);
 }
 
@@ -592,3 +598,17 @@ bool operator!=(const Token &t, const std::string &s)
 {
 	return t.value != s;
 }
+
+// void	ServerConfig::setupServer(void)
+// {
+// 	if ((_fd = socket(AF_INET, SOCK_STREAM, 0)) == -1)
+// 	{
+// 		std::cout << "webserv: socket error Closing\n";
+// 		exit(1);
+// 	}
+// 	int value = 1;
+// 	setsockopt(_fd, SOL_SOCKET, SO_REUSEADDR, &value, sizeof(int));
+// 	memset(&_server_address, 0, sizeof(_server_address));
+// 	_server_address.sin_family = AF_INET;
+// 	_server_address.sin_addr.s_addr = _listenHost;
+// }

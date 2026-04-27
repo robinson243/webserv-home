@@ -6,7 +6,7 @@
 /*   By: ydembele <ydembele@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/04/14 15:01:30 by romukena          #+#    #+#             */
-/*   Updated: 2026/04/25 17:37:40 by ydembele         ###   ########.fr       */
+/*   Updated: 2026/04/27 19:04:46 by ydembele         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -15,12 +15,30 @@
 
 #include <climits>
 #include <iostream>
+#include <string.h>
 #include <map>
 #include <set>
 #include <vector>
+#include <sys/types.h>
+#include <sys/socket.h>
+
+#include <netinet/in.h>
+#include <netinet/ip.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
 
 class LocationConfig;
+class ServerConfig;
 
+struct ListenSocket
+{
+    std::string host;
+    unsigned int port;
+    int fd;
+    sockaddr_in addr;
+
+    std::vector<ServerConfig*> servers;
+};
 
 struct Token
 {
@@ -52,9 +70,11 @@ private:
 	ServerConfig &operator=(const ServerConfig &other);
 	ServerConfig(const ServerConfig &other);
 	~ServerConfig();
+	
 
 	void	parsConfig(std::vector<std::string> &data);
 	std::vector<unsigned int> getPort() const;
+	std::vector<std::string> getListenHosts() const;
 	std::vector<std::string> getServerName() const;
 	std::string getRoot() const;
 	std::vector<std::string> getIndex() const;
