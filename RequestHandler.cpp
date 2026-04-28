@@ -14,34 +14,31 @@
 #include "LocationConfig.hpp"
 #include <algorithm>
 #include <cstring>
-#include <iterator>
-#include <sys/stat.h>
-#include <iostream>
+#include <dirent.h>
 #include <fstream>
+#include <iostream>
+#include <iterator>
 #include <sstream>
 #include <string>
-#include <dirent.h>
+#include <sys/stat.h>
 
-int findLocation(ServerConfig server, HttpRequest req)
-{
+int findLocation(ServerConfig server, HttpRequest req) {
 	std::map<std::string, std::string> r = req.getRequest();
 	std::string uri = r["uri"];
 	std::vector<LocationConfig>::iterator it;
 	std::vector<LocationConfig> loc = server.getLocations();
 	int val = 0;
-	for (it = loc.begin(); it != loc.end(); ++it)
-	{
+	for (it = loc.begin(); it != loc.end(); ++it) {
 		std::string path = (*it).getPath();
-		if (uri.compare(0, path.size(), path) == 0 && (uri.size() == path.size() || uri[path.size()] == '/'))
-		{
+		if (uri.compare(0, path.size(), path) == 0
+			&& (uri.size() == path.size() || uri[path.size()] == '/')) {
 			val = std::distance(loc.begin(), it);
 		}
 	}
 	return val;
 }
 
-std::string concatenatePath(ServerConfig server, HttpRequest req)
-{
+std::string concatenatePath(ServerConfig server, HttpRequest req) {
 	std::map<std::string, std::string> r = req.getRequest();
 	std::string uri = r["uri"];
 	if (uri.find("/..") != std::string::npos)
@@ -50,8 +47,7 @@ std::string concatenatePath(ServerConfig server, HttpRequest req)
 	std::string finalPath = root + uri;
 
 	size_t p = finalPath.find("//");
-	while (p != std::string::npos)
-	{
+	while (p != std::string::npos) {
 		finalPath.erase(p, 1);
 		p = finalPath.find("//");
 	}
@@ -73,8 +69,7 @@ std::string concatenatePath(ServerConfig server, HttpRequest req)
 	return absPath;
 }
 
-bool readFileToString(const std::string &path, std::string &content)
-{
+bool readFileToString(const std::string &path, std::string &content) {
 	std::ifstream file(path.c_str());
 	if (!file.is_open())
 		return false;
@@ -84,8 +79,7 @@ bool readFileToString(const std::string &path, std::string &content)
 	return true;
 }
 
-std::string getContentType(const std::string &path)
-{
+std::string getContentType(const std::string &path) {
 	size_t pos = path.find_last_of('.');
 	if (pos == std::string::npos)
 		return "text/plain";
@@ -114,26 +108,21 @@ std::string getContentType(const std::string &path)
 	return "application/octet-stream";
 }
 
-HttpResponse Get(const HttpRequest &req, const ServerConfig &server)
-{
+HttpResponse Get(const HttpRequest &req, const ServerConfig &server) {
 	struct stat st;
 	HttpResponse response;
 	int valLocation = findLocation(server, req);
 	std::vector<LocationConfig> locations = server.getLocations();
-	if (locations.empty())
-	{
+	if (locations.empty()) {
 		response.addCode(404);
 		return response;
 	}
 	std::vector<std::string> indexes = locations[valLocation].getIndex();
 	std::string path = concatenatePath(server, req);
-	if (stat(path.c_str(), &st) == 0)
-	{
-		if (S_ISREG(st.st_mode))
-		{
+	if (stat(path.c_str(), &st) == 0) {
+		if (S_ISREG(st.st_mode)) {
 			std::string body;
-			if (!readFileToString(path, body))
-			{
+			if (!readFileToString(path, body)) {
 				response.addCode(403);
 				return response;
 			}
@@ -145,19 +134,17 @@ HttpResponse Get(const HttpRequest &req, const ServerConfig &server)
 			response.addHeadersResponse("Content-Length", oss.str());
 			response.addBodyResponse(body);
 			return response;
-		}
-		else if (S_ISDIR(st.st_mode))
-		{
+		} else if (S_ISDIR(st.st_mode)) {
 			// Sous-cas 1 : chercher un fichier index
-			for (std::vector<std::string>::iterator it = indexes.begin(); it != indexes.end(); ++it)
-			{
+			for (std::vector<std::string>::iterator it = indexes.begin();
+				 it != indexes.end();
+				 ++it) {
 				std::string indexPath = path + "/" + *it;
 				struct stat stIndex;
-				if (stat(indexPath.c_str(), &stIndex) == 0 && S_ISREG(stIndex.st_mode))
-				{
+				if (stat(indexPath.c_str(), &stIndex) == 0
+					&& S_ISREG(stIndex.st_mode)) {
 					std::string body;
-					if (!readFileToString(indexPath, body))
-					{
+					if (!readFileToString(indexPath, body)) {
 						response.addCode(403);
 						return response;
 					}
@@ -172,23 +159,21 @@ HttpResponse Get(const HttpRequest &req, const ServerConfig &server)
 				}
 			}
 
-			if (locations[valLocation].getAutoindex())
-			{
+			if (locations[valLocation].getAutoindex()) {
 				DIR *dir = opendir(path.c_str());
-				if (!dir)
-				{
+				if (!dir) {
 					response.addCode(403);
 					return response;
 				}
 
 				std::string uri = req.getRequest().at("uri");
 				std::string html;
-				html += "<html><head><title>Index of " + uri + "</title></head><body>";
+				html += "<html><head><title>Index of " + uri
+						+ "</title></head><body>";
 				html += "<h1>Index of " + uri + "</h1><ul>";
 
 				struct dirent *entry;
-				while ((entry = readdir(dir)) != NULL)
-				{
+				while ((entry = readdir(dir)) != NULL) {
 					std::string name = entry->d_name;
 					if (name == ".")
 						continue;
@@ -198,13 +183,14 @@ HttpResponse Get(const HttpRequest &req, const ServerConfig &server)
 					std::string href = name;
 					std::string display = name;
 
-					if (stat(fullPath.c_str(), &stEntry) == 0 && S_ISDIR(stEntry.st_mode))
-					{
+					if (stat(fullPath.c_str(), &stEntry) == 0
+						&& S_ISDIR(stEntry.st_mode)) {
 						href = name + "/";
 						display = name + "/";
 					}
 
-					html += "<li><a href=\"" + href + "\">" + display + "</a></li>";
+					html +=
+						"<li><a href=\"" + href + "\">" + display + "</a></li>";
 				}
 				closedir(dir);
 
@@ -218,9 +204,7 @@ HttpResponse Get(const HttpRequest &req, const ServerConfig &server)
 				response.addHeadersResponse("Content-Length", oss.str());
 				response.addBodyResponse(html);
 				return response;
-			}
-			else
-			{
+			} else {
 				response.addCode(403);
 				return response;
 			}
@@ -230,66 +214,80 @@ HttpResponse Get(const HttpRequest &req, const ServerConfig &server)
 	return response;
 }
 
-HttpResponse Delete(const HttpRequest &req, const ServerConfig &server)
-{
+HttpResponse Delete(const HttpRequest &req, const ServerConfig &server) {
 	struct stat st;
 	HttpResponse response;
 	int valLocation = findLocation(server, req);
 	std::vector<LocationConfig> locations = server.getLocations();
-	if (locations.empty())
-	{
+	if (locations.empty()) {
 		response.addCode(404);
 		return response;
 	}
-	if (!locations[valLocation].isMethodAllowed("DELETE"))
-	{
+	if (!locations[valLocation].isMethodAllowed("DELETE")) {
 		response.addCode(405);
 		return response;
 	}
 	std::string path = concatenatePath(server, req);
-	if (path == "")
-	{
+	if (path == "") {
 		response.addCode(403);
 		return response;
 	}
-	if (stat(path.c_str(), &st) == -1)
-	{
+	if (stat(path.c_str(), &st) == -1) {
 		response.addCode(404);
 		return response;
 	}
-	if (S_ISDIR(st.st_mode))
-	{
+	if (S_ISDIR(st.st_mode)) {
 		response.addCode(403);
 		return response;
 	}
-	if (remove(path.c_str()) == 0)
-	{
+	if (remove(path.c_str()) == 0) {
 		response.addCode(204);
 		return response;
-	}
-	else
-	{
+	} else {
 		response.addCode(403);
 		return response;
 	}
 }
 
-HttpResponse POST(const HttpRequest &req, const ServerConfig &server)
-{
+HttpResponse POST(const HttpRequest &req, const ServerConfig &server) {
 	struct stat st;
 	HttpResponse response;
 	int valLocation = findLocation(server, req);
 	std::vector<LocationConfig> locations = server.getLocations();
 	std::vector<unsigned char> body = req.getBody();
-	
-	if (locations.empty())
-	{
+
+	if (locations.empty()) {
 		response.addCode(404);
 		return response;
 	}
-	if (!locations[valLocation].isMethodAllowed("POST"))
-	{
+	if (!locations[valLocation].isMethodAllowed("POST")) {
 		response.addCode(405);
+		return response;
+	}
+	if (locations[valLocation].gethasmaxsize()
+		&& locations[valLocation].getMaxBody() < body.size()) {
+		response.addCode(413);
+		return response;
+	}
+	if (locations[valLocation].getUploadPath().empty()) {
+		response.addCode(500);
+		return response;
+	}
+
+	std::map<std::string, std::string> r = req.getRequest();
+	std::string uri = r["uri"];
+	if (uri.empty()) {
+		response.addCode(400);
+		return response;
+	}
+	std::string URI;
+	size_t p = uri.find_last_of("/");
+	if (p == std::string::npos)
+		URI = uri;
+	else
+		URI = uri.substr(p + 1);
+	if (URI.empty()) {
+		response.addCode(400);
 		return response;
 	}
 }
