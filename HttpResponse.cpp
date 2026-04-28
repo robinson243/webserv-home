@@ -63,14 +63,14 @@ std::string HttpResponse::serialize() {
 	std::string final;
 	std::ostringstream oss;
 	oss << _code;
-	final = _version + " " + oss.str() + " " + _message + " ";
+	final = _version + " " + oss.str() + " " + _message + "\r\n";
 	std::map<std::string, std::string>::iterator it;
-	for (it = _headers.begin(); it != _headers.end(); ++it)
-	{
+	for (it = _headers.begin(); it != _headers.end(); ++it) {
 		std::string str;
-		str = it->first + " : " + it->second + " ";
+		str = it->first + ": " + it->second + "\r\n";
 		final += str;
 	}
 	std::string body(_body.begin(), _body.end());
-	final += body;
+	final += "\r\n" + body;
+	return final;
 }

@@ -23,3 +23,4 @@ std::string getContentType(const std::string &path);
 HttpResponse Get(const HttpRequest &req, const ServerConfig &server);
 HttpResponse Delete(const HttpRequest &req, const ServerConfig &server);
 HttpResponse Post(const HttpRequest &req, const ServerConfig &server);
+HttpResponse handleRequest(const HttpRequest &req, const ServerConfig &server);

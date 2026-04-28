@@ -27,11 +27,14 @@ int findLocation(ServerConfig server, HttpRequest req) {
 	std::string uri = r["uri"];
 	std::vector<LocationConfig>::iterator it;
 	std::vector<LocationConfig> loc = server.getLocations();
-	int val = 0;
+	int val = -1;
+	size_t longestMatch = 0;
 	for (it = loc.begin(); it != loc.end(); ++it) {
 		std::string path = (*it).getPath();
 		if (uri.compare(0, path.size(), path) == 0
-			&& (uri.size() == path.size() || uri[path.size()] == '/')) {
+			&& (uri.size() == path.size() || uri[path.size()] == '/')
+			&& path.size() > longestMatch) {
+			longestMatch = path.size();
 			val = std::distance(loc.begin(), it);
 		}
 	}
@@ -305,5 +308,36 @@ HttpResponse Post(const HttpRequest &req, const ServerConfig &server) {
 	file << str;
 	file.close();
 	response.addCode(201);
+	return response;
+}
+
+HttpResponse handleRequest(const HttpRequest &req, const ServerConfig &server) {
+	HttpResponse response;
+	int valLocation = findLocation(server, req);
+	std::vector<LocationConfig> locations = server.getLocations();
+	std::vector<unsigned char> body = req.getBody();
+	std::map<std::string, std::string> r = req.getRequest();
+	std::string uri = r["uri"];
+	std::set<std::string> allowMeth = locations[valLocation].getAllowMethods();
+
+	if (valLocation == -1) {
+		response.addCode(404);
+		return response;
+	}
+	if (allowMeth.find(r["method"]) == allowMeth.end()) {
+		response.addCode(405);
+		return response;
+	}
+
+	if (r["method"] == "GET")
+		response = Get(req, server);
+	else if (r["method"] == "POST")
+		response = Post(req, server);
+	else if (r["method"] == "DELETE")
+		response = Delete(req, server);
+	else {
+		response.addCode(404);
+		return response;
+	}
 	return response;
 }
