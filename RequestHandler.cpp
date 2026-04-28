@@ -61,8 +61,11 @@ std::string concatenatePath(ServerConfig server, HttpRequest req) {
 	std::string absRoot(resolvedRoot);
 	free(resolvedRoot);
 	char *resolvedPath = realpath(finalPath.c_str(), NULL);
-	if (!resolvedPath)
+	if (!resolvedPath) {
+		if (finalPath.find(absRoot) != 0)
+			return "";
 		return finalPath;
+	}
 
 	std::string absPath(resolvedPath);
 	free(resolvedPath);
@@ -116,12 +119,16 @@ HttpResponse Get(const HttpRequest &req, const ServerConfig &server) {
 	HttpResponse response;
 	int valLocation = findLocation(server, req);
 	std::vector<LocationConfig> locations = server.getLocations();
-	if (locations.empty()) {
+	if (locations.empty() || valLocation == -1) {
 		response.addCode(404);
 		return response;
 	}
 	std::vector<std::string> indexes = locations[valLocation].getIndex();
 	std::string path = concatenatePath(server, req);
+	if (path.empty()) {
+		response.addCode(403);
+		return response;
+	}
 	if (stat(path.c_str(), &st) == 0) {
 		if (S_ISREG(st.st_mode)) {
 			std::string body;
@@ -138,6 +145,12 @@ HttpResponse Get(const HttpRequest &req, const ServerConfig &server) {
 			response.addBodyResponse(body);
 			return response;
 		} else if (S_ISDIR(st.st_mode)) {
+			std::string uri = req.getRequest().at("uri");
+			if (uri.empty() || uri[uri.size() - 1] != '/') {
+				response.addCode(301);
+				response.addHeadersResponse("Location", uri + "/");
+				return response;
+			}
 			// Sous-cas 1 : chercher un fichier index
 			for (std::vector<std::string>::iterator it = indexes.begin();
 				 it != indexes.end();
@@ -222,12 +235,8 @@ HttpResponse Delete(const HttpRequest &req, const ServerConfig &server) {
 	HttpResponse response;
 	int valLocation = findLocation(server, req);
 	std::vector<LocationConfig> locations = server.getLocations();
-	if (locations.empty()) {
+	if (locations.empty() || valLocation == -1) {
 		response.addCode(404);
-		return response;
-	}
-	if (!locations[valLocation].isMethodAllowed("DELETE")) {
-		response.addCode(405);
 		return response;
 	}
 	std::string path = concatenatePath(server, req);
@@ -259,7 +268,7 @@ HttpResponse Post(const HttpRequest &req, const ServerConfig &server) {
 	std::vector<LocationConfig> locations = server.getLocations();
 	std::vector<unsigned char> body = req.getBody();
 
-	if (locations.empty()) {
+	if (locations.empty() || valLocation == -1) {
 		response.addCode(404);
 		return response;
 	}
@@ -299,7 +308,7 @@ HttpResponse Post(const HttpRequest &req, const ServerConfig &server) {
 	}
 	std::string uploadPath = locations[valLocation].getUploadPath();
 	std::string path = uploadPath + "/" + URI;
-	std::ofstream file(path, std::ios::binary);
+	std::ofstream file(path.c_str(), std::ios::binary);
 	if (!file.is_open()) {
 		response.addCode(403);
 		return response;
@@ -314,16 +323,16 @@ HttpResponse Post(const HttpRequest &req, const ServerConfig &server) {
 HttpResponse handleRequest(const HttpRequest &req, const ServerConfig &server) {
 	HttpResponse response;
 	int valLocation = findLocation(server, req);
+	if (valLocation == -1) {
+		response.addCode(404);
+		return response;
+	}
 	std::vector<LocationConfig> locations = server.getLocations();
 	std::vector<unsigned char> body = req.getBody();
 	std::map<std::string, std::string> r = req.getRequest();
 	std::string uri = r["uri"];
 	std::set<std::string> allowMeth = locations[valLocation].getAllowMethods();
 
-	if (valLocation == -1) {
-		response.addCode(404);
-		return response;
-	}
 	if (allowMeth.find(r["method"]) == allowMeth.end()) {
 		response.addCode(405);
 		return response;
