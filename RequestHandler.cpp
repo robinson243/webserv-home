@@ -32,7 +32,8 @@ int findLocation(ServerConfig server, HttpRequest req) {
 	for (it = loc.begin(); it != loc.end(); ++it) {
 		std::string path = (*it).getPath();
 		if (uri.compare(0, path.size(), path) == 0
-			&& (uri.size() == path.size() || uri[path.size()] == '/')
+			&& (uri.size() == path.size() || uri[path.size()] == '/'
+				|| path == "/")
 			&& path.size() > longestMatch) {
 			longestMatch = path.size();
 			val = std::distance(loc.begin(), it);
@@ -313,7 +314,7 @@ HttpResponse Post(const HttpRequest &req, const ServerConfig &server) {
 		response.addCode(403);
 		return response;
 	}
-	std::string str(req.getBody().begin(), req.getBody().end());
+	std::string str(body.begin(), body.end());
 	file << str;
 	file.close();
 	response.addCode(201);
