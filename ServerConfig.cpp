@@ -6,16 +6,17 @@
 /*   By: ydembele <ydembele@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/04/16 13:40:39 by ydembele          #+#    #+#             */
-/*   Updated: 2026/04/27 19:25:06 by ydembele         ###   ########.fr       */
+/*   Updated: 2026/04/28 15:27:30 by ydembele         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "ServerConfig.hpp"
 
+#include <cstdlib>
 #include <limits>
 #include <fstream>
-#include <array>
 #include <string>
+#include <fstream>
 #include "LocationConfig.hpp"
 
 ServerConfig::ServerConfig()
@@ -89,9 +90,9 @@ std::vector<ServerConfig> pars(const std::string &file)
 	return servers;
 }
 
-std::map<int, std::vector<ServerConfig*>> groupServersByPort(const std::vector<ServerConfig> &servers)
+std::map<int, std::vector<ServerConfig*> > groupServersByPort(const std::vector<ServerConfig> &servers)
 {
-	std::map<int, std::vector<ServerConfig*>> serversByPort;
+	std::map<int, std::vector<ServerConfig*> > serversByPort;
 	for (size_t i = 0; i < servers.size(); i++)
 	{
 		const std::vector<unsigned int> port = servers[i].getPort();
@@ -154,7 +155,7 @@ ServerConfig parseServer(std::vector<Token>::iterator &it, std::vector<Token>::i
 
 void parseDirective(std::vector<Token>::iterator &it, std::vector<Token>::iterator end, ServerConfig &server)
 {
-	std::array<std::string, 7> directives = {"listen", "server_name", "root", "index", "error_page", "client_max_body_size", "location"};
+	std::string directives[7] = {"listen", "server_name", "root", "index", "error_page", "client_max_body_size", "location"};
 	int i = 0;
 	while (i < 7 && it->value != directives[i])
 		i++;
@@ -217,34 +218,34 @@ size_t findSize(std::vector<Token>::iterator &it, std::vector<Token>::iterator e
 	++it;
 	if (it == end)
 		throw std::runtime_error("client_max_body_size: missing value");
-	if (!isNumber(it->value))
-    throw std::runtime_error("client_max_body_size: Invalid body size");
-	size_t value = std::strtoul((it->value).c_str(), NULL, 10);
-	if (value == 0)
-    throw std::runtime_error("client_max_body_size: Body size must be > 0");
+	char *d;
+	long value = std::strtol(it->value.c_str(), &d, 10);
+
+	if (*d != '\0')
+    	throw std::runtime_error("client_max_body_size: invalid number");
+	if (value < 0)
+    	throw std::runtime_error("client_max_body_size: negative value");
 	++it;
 	if (it == end || *it != ";" || it->in_quotes)
 		throw std::runtime_error("client_max_body_size: Body size: missing ';");
 	++it;
-	return value;
+	return static_cast<size_t>(value);
 }
 
 void	parseErrorPage(std::vector<Token>::iterator &it, std::vector<Token>::iterator end, ServerConfig &server)
 {
-	int code;
 	std::string path;
 
 	++it;
 	if (it == end)
 		throw std::runtime_error("Error page: missing value");
-	try
-	{
-		code = std::stoi(it->value);
-	}
-	catch (...)
-	{
-		throw std::runtime_error("Error page: invalid code format");
-	}
+	char *d;
+	long code;
+	
+	code = std::strtol(it->value.c_str(), &d, 10);
+	
+	if (*d != '\0')
+		throw std::runtime_error("Error page: invalid number");
 	if (code < 100 || code > 599)
 		throw std::runtime_error("Error page: invalid code range [100-599]");
 	++it;
@@ -257,7 +258,7 @@ void	parseErrorPage(std::vector<Token>::iterator &it, std::vector<Token>::iterat
 	if (it == end || *it != ";" || it->in_quotes)
 		throw std::runtime_error("Error page: ';'");
 	++it;
-	server.setErrorPage(code, path);
+	server.setErrorPage(static_cast<int>(code), path);
 }
 
 std::vector<std::string> findIndex(std::vector<Token>::iterator &it, std::vector<Token>::iterator end)
@@ -324,15 +325,7 @@ void findPort(std::vector<Token>::iterator &it, std::vector<Token>::iterator end
         portStr = value;
         server.setListenHost("0.0.0.0");
     }
-    int port = 0;
-    try
-    {
-        port = std::stoi(portStr);
-    }
-    catch (...)
-    {
-        throw std::runtime_error("listen: invalid port format");
-    }
+    long port = std::strtol(portStr.c_str(), NULL, 10);
     if (port < 1 || port > 65535)
         throw std::runtime_error("listen: invalid port range [1-65535]");
     ++it;
@@ -367,7 +360,7 @@ std::string	LoadConfigFile(const std::string &file)
 {
 	std::string	data;
 	std::string line;
-	std::ifstream f(file);
+	std::ifstream f(file.c_str());
 
 	if (!f.is_open())
 		throw std::runtime_error("Cannot open file");
@@ -599,16 +592,3 @@ bool operator!=(const Token &t, const std::string &s)
 	return t.value != s;
 }
 
-// void	ServerConfig::setupServer(void)
-// {
-// 	if ((_fd = socket(AF_INET, SOCK_STREAM, 0)) == -1)
-// 	{
-// 		std::cout << "webserv: socket error Closing\n";
-// 		exit(1);
-// 	}
-// 	int value = 1;
-// 	setsockopt(_fd, SOL_SOCKET, SO_REUSEADDR, &value, sizeof(int));
-// 	memset(&_server_address, 0, sizeof(_server_address));
-// 	_server_address.sin_family = AF_INET;
-// 	_server_address.sin_addr.s_addr = _listenHost;
-// }

@@ -6,13 +6,13 @@
 /*   By: ydembele <ydembele@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/04/14 13:44:36 by romukena          #+#    #+#             */
-/*   Updated: 2026/04/21 17:58:11 by ydembele         ###   ########.fr       */
+/*   Updated: 2026/04/28 15:21:28 by ydembele         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "LocationConfig.hpp"
 #include <limits>
-#include <array>
+#include <cstdlib>
 
 LocationConfig::LocationConfig()
 	: _autoindex(false), _has_autoindex(false), _max_body(std::numeric_limits<std::size_t>::max()),
@@ -85,7 +85,6 @@ LocationConfig parseLocation(std::vector<Token>::iterator &it, std::vector<Token
 
 void	parseReturn(std::vector<Token>::iterator &it, std::vector<Token>::iterator end, LocationConfig &location)
 {
-	int code;
 	std::string path;
 
 	if (location.hasRedirect())
@@ -93,9 +92,13 @@ void	parseReturn(std::vector<Token>::iterator &it, std::vector<Token>::iterator 
 	++it;
 	if (it == end)
 		throw std::runtime_error("Return: missing value");
-	code = std::stoi(it->value);
+	char *d;
+	long code = std::strtol(it->value.c_str(), &d, 10);
+
+	if (*d != '\0')
+    	throw std::runtime_error("Return: not a valid integer");
 	if (code < 100 || code > 599)
-		throw std::runtime_error("Return: invalid value");
+    	throw std::runtime_error("Return: invalid value");
 	++it;
 	if (it == end)
 		throw std::runtime_error("Return: missing value");

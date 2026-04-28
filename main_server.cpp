@@ -6,7 +6,7 @@
 /*   By: ydembele <ydembele@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/04/20 19:34:17 by ydembele          #+#    #+#             */
-/*   Updated: 2026/04/27 19:18:37 by ydembele         ###   ########.fr       */
+/*   Updated: 2026/04/28 15:29:33 by ydembele         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -15,8 +15,8 @@
 
 ServerConfig *selectServer(int port, std::string host, std::vector<ServerConfig> &servers)
 {
-    std::map<int, std::vector<ServerConfig*>> serversByPort = groupServersByPort(servers);
-    std::map<int, std::vector<ServerConfig*>>::iterator it = serversByPort.find(port);
+    std::map<int, std::vector<ServerConfig*> > serversByPort = groupServersByPort(servers);
+    std::map<int, std::vector<ServerConfig*> >::iterator it = serversByPort.find(port);
     if (it == serversByPort.end() || it->second.empty())
         return &servers[0];
     std::vector<ServerConfig*> &s = it->second;
@@ -66,8 +66,6 @@ std::vector<ListenSocket> buildListenSockets(std::vector<ServerConfig> &servers)
         ServerConfig &srv = servers[i];
         std::vector<unsigned int> ports = srv.getPort();
         std::vector<std::string> hosts = srv.getListenHosts();
-
-        std::cout << ports.size() << " " << hosts.size() << std::endl << std::endl;
         for (size_t p = 0; p < ports.size(); p++)
         {
             std::string host = "0.0.0.0";
@@ -118,21 +116,44 @@ int main(int ac, char **av)
     try
     {
         std::vector<ServerConfig> servers;
+
         if (ac == 1)
             servers = pars("exemple.conf");
         else
             servers = pars(av[1]);
-        // for (size_t i = 0; i < servers.size(); i++)
-	    //     std::cout << servers[i];
-        std::map<int, std::vector<ServerConfig*>> serversByPort = groupServersByPort(servers);
-        
-        // std::cout << servers.size() << std::endl;
+
+        std::cout << "=== SERVERS PARSED ===" << std::endl;
+        for (size_t i = 0; i < servers.size(); i++)
+            std::cout << servers[i] << std::endl;
+
+        std::cout << "\n=== GROUPING TEST ===" << std::endl;
+        std::map<int, std::vector<ServerConfig*> > serversByPort = groupServersByPort(servers);
+        std::cout << "serversByPort size = " << serversByPort.size() << std::endl;
+
+        std::cout << "\n=== SELECT SERVER TEST ===" << std::endl;
         ServerConfig *tmp = selectServer(90, "example.com", servers);
-        // std::cout << *tmp;
+        std::cout << *tmp << std::endl;
+
+        std::cout << "\n=== SELECT LOCATION TEST ===" << std::endl;
         LocationConfig ll = selectLocation("/images", *tmp);
-        std::cout << "\n\n\n";
-        // std::cout << ll;
-        std::vector<ListenSocket> s = buildListenSockets(servers);
+        std::cout << ll << std::endl;
+
+        std::cout << "\n=== BUILD SOCKETS TEST ===" << std::endl;
+        std::vector<ListenSocket> sockets = buildListenSockets(servers);
+
+        std::cout << "Sockets created: " << sockets.size() << std::endl;
+
+        for (size_t i = 0; i < sockets.size(); i++)
+        {
+            std::cout << "Socket " << i << std::endl;
+            std::cout << "  host: " << sockets[i].host << std::endl;
+            std::cout << "  port: " << sockets[i].port << std::endl;
+            std::cout << "  fd: " << sockets[i].fd << std::endl;
+            std::cout << "  servers linked: " << sockets[i].servers.size() << std::endl;
+        }
+
+        std::cout << "\n=== TEST ACCEPT READY ===" << std::endl;
+        std::cout << "Server is ready (no crash = good)" << std::endl;
     }
     catch (const std::exception &e)
     {
