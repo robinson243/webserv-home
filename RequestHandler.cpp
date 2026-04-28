@@ -249,7 +249,7 @@ HttpResponse Delete(const HttpRequest &req, const ServerConfig &server) {
 	}
 }
 
-HttpResponse POST(const HttpRequest &req, const ServerConfig &server) {
+HttpResponse Post(const HttpRequest &req, const ServerConfig &server) {
 	struct stat st;
 	HttpResponse response;
 	int valLocation = findLocation(server, req);
@@ -290,4 +290,20 @@ HttpResponse POST(const HttpRequest &req, const ServerConfig &server) {
 		response.addCode(400);
 		return response;
 	}
+	if (URI.find("..") != std::string::npos) {
+		response.addCode(403);
+		return response;
+	}
+	std::string uploadPath = locations[valLocation].getUploadPath();
+	std::string path = uploadPath + "/" + URI;
+	std::ofstream file(path, std::ios::binary);
+	if (!file.is_open()) {
+		response.addCode(403);
+		return response;
+	}
+	std::string str(req.getBody().begin(), req.getBody().end());
+	file << str;
+	file.close();
+	response.addCode(201);
+	return response;
 }

@@ -22,4 +22,4 @@ bool readFileToString(const std::string &path, std::string &content);
 std::string getContentType(const std::string &path);
 HttpResponse Get(const HttpRequest &req, const ServerConfig &server);
 HttpResponse Delete(const HttpRequest &req, const ServerConfig &server);
-HttpResponse POST(const HttpRequest &req, const ServerConfig &server);
+HttpResponse Post(const HttpRequest &req, const ServerConfig &server);

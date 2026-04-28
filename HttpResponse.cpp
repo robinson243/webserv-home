@@ -11,60 +11,66 @@
 /* ************************************************************************** */
 
 #include "HttpResponse.hpp"
+#include <sstream>
 
-HttpResponse::HttpResponse() : _code(-1)
-{
+HttpResponse::HttpResponse() : _code(-1) {
 }
 
-HttpResponse::~HttpResponse()
-{
+HttpResponse::~HttpResponse() {
 }
 
-int HttpResponse::getCode() const
-{
+int HttpResponse::getCode() const {
 	return _code;
 }
 
-std::string HttpResponse::getVersion() const
-{
+std::string HttpResponse::getVersion() const {
 	return _version;
 }
 
-std::string HttpResponse::getMessage() const
-{
+std::string HttpResponse::getMessage() const {
 	return _message;
 }
 
-std::vector<unsigned char> HttpResponse::getBody() const
-{
+std::vector<unsigned char> HttpResponse::getBody() const {
 	return _body;
 }
 
-std::map<std::string, std::string> HttpResponse::getHeaders() const
-{
+std::map<std::string, std::string> HttpResponse::getHeaders() const {
 	return _headers;
 }
 
-void HttpResponse::addCode(int code)
-{
+void HttpResponse::addCode(int code) {
 	_code = code;
 }
-void HttpResponse::addVersion(std::string &e)
-{
+void HttpResponse::addVersion(std::string &e) {
 	_version = e;
 }
 
-void HttpResponse::addMessage(std::string &e)
-{
+void HttpResponse::addMessage(std::string &e) {
 	_message = e;
 }
 
-void HttpResponse::addBodyResponse(std::string &e)
-{
+void HttpResponse::addBodyResponse(std::string &e) {
 	_body.insert(_body.end(), e.begin(), e.end());
 }
 
-void HttpResponse::addHeadersResponse(const std::string &key, const std::string &e)
-{
+void HttpResponse::addHeadersResponse(const std::string &key,
+									  const std::string &e) {
 	_headers.insert(std::pair<std::string, std::string>(key, e));
+}
+
+std::string HttpResponse::serialize() {
+	std::string final;
+	std::ostringstream oss;
+	oss << _code;
+	final = _version + " " + oss.str() + " " + _message + " ";
+	std::map<std::string, std::string>::iterator it;
+	for (it = _headers.begin(); it != _headers.end(); ++it)
+	{
+		std::string str;
+		str = it->first + " : " + it->second + " ";
+		final += str;
+	}
+	std::string body(_body.begin(), _body.end());
+	final += body;
 }

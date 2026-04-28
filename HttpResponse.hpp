@@ -11,9 +11,9 @@
 /* ************************************************************************** */
 
 #pragma once
-#include <vector>
 #include <iostream>
 #include <map>
+#include <vector>
 
 /*
 HTTP/1.1 200 OK\r\n          ← status line
@@ -23,16 +23,15 @@ Content-Length: 42\r\n       |
 <html>...</html>             ← body
 */
 
-class HttpResponse
-{
-private:
+class HttpResponse {
+  private:
 	int _code;
 	std::string _version;
 	std::string _message;
 	std::vector<unsigned char> _body;
 	std::map<std::string, std::string> _headers;
 
-public:
+  public:
 	HttpResponse();
 	~HttpResponse();
 	int getCode() const;
@@ -46,4 +45,5 @@ public:
 	void addMessage(std::string &e);
 	void addBodyResponse(std::string &e);
 	void addHeadersResponse(const std::string &key, const std::string &e);
+	std::string serialize();
 };
