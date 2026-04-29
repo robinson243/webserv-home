@@ -1,0 +1,342 @@
+══════ GET STATIQUE ══════
+
+[T1] GET /index.html → 200
+  Attendu : 200
+  Recu    :  200 
+Content-Length: 19
+Content-Type: text/html
+
+<html>Hello</html>
+
+
+[T2] GET /nonexistent.html → 404
+  Attendu : 404
+  Recu    :  404 
+
+
+
+[T3] GET /nested/page.html → 200
+  Attendu : 200
+  Recu    :  200 
+Content-Length: 19
+Content-Type: text/html
+
+<html>nested</html>
+
+[T4] GET /files/readme.txt → 200 text/plain
+  Attendu : 200
+  Recu    :  200 
+Content-Length: 11
+Content-Type: text/plain
+
+hello files
+
+[T5] GET /files/data.json → 200 application/json
+  Attendu : 200
+  Recu    :  200 
+Content-Length: 11
+Content-Type: application/json
+
+{"ok":true}
+
+[T6] GET /no_read/secret.txt → 403 (chmod 0000)
+  Attendu : 403
+  Recu    :  403 
+
+
+
+[T7] GET /dir_autoindex/sub.txt → 200
+  Attendu : 200
+  Recu    :  200 
+Content-Length: 17
+Content-Type: text/plain
+
+autoindex content
+
+[T8] GET /del/keep.txt → 405 (GET interdit sur /del)
+  Attendu : 405
+  Recu    :  405 
+
+
+
+[T9] GET /upload/anything → 405 (GET interdit sur /upload)
+  Attendu : 405
+  Recu    :  405 
+
+
+
+══════ GET RÉPERTOIRES ══════
+
+[T10] GET / → 200 (index.html trouvé)
+  Attendu : 200
+  Recu    :  200 
+Content-Length: 19
+Content-Type: text/html
+
+<html>Hello</html>
+
+
+[T11] GET /dir_with_index/ → 200 (index.html trouvé)
+  Attendu : 200
+  Recu    :  200 
+Content-Length: 23
+Content-Type: text/html
+
+<html>with index</html>
+
+[T12] GET /dir_no_index/ → 403 (pas d'index, autoindex OFF)
+  Attendu : 403
+  Recu    :  403 
+
+
+
+[T13] GET /dir_autoindex/ → 200 (listing HTML)
+  Attendu : 200
+  Recu    :  200 
+Content-Length: 272
+Content-Type: text/html
+
+<html><head><title>Index of /dir_autoindex/</title></head><body><h1>Index of /dir_autoindex/</h1><ul><li><a href="sub.txt">sub.txt</a></li><li><a href="file1.txt">file1.txt</a></li><li><a href="../">../</a></li><li><a href="file2.txt">file2.txt</a></li></ul></body></html>
+
+[T14] GET /empty_dir/ → 200 (listing vide)
+  Attendu : 200
+  Recu    :  200 
+Content-Length: 142
+Content-Type: text/html
+
+<html><head><title>Index of /empty_dir/</title></head><body><h1>Index of /empty_dir/</h1><ul><li><a href="../">../</a></li></ul></body></html>
+
+[T15] GET /dir_both/ → 200 (index prioritaire sur autoindex)
+  Attendu : 200
+  Recu    :  200 
+Content-Length: 17
+Content-Type: text/html
+
+<html>both</html>
+
+[T16] GET /dir_with_index → 301 (sans slash final)
+  Attendu : 301
+  Recu    :  301 
+Location: /dir_with_index/
+
+
+
+[T17] GET /dir_autoindex → 301 (sans slash final)
+  Attendu : 301
+  Recu    :  301 
+Location: /dir_autoindex/
+
+
+
+[T18] GET /empty_dir → 301 (sans slash final)
+  Attendu : 301
+  Recu    :  301 
+Location: /empty_dir/
+
+
+
+[T19] GET /dir_no_index → 301 (sans slash final)
+  Attendu : 301
+  Recu    :  301 
+Location: /dir_no_index/
+
+
+
+══════ SÉCURITÉ ══════
+
+[T20] GET /../etc/passwd → 403
+  Attendu : 403
+  Recu    :  403 
+
+
+
+[T21] GET /files/../../../etc/passwd → 403
+  Attendu : 403
+  Recu    :  403 
+
+
+
+[T22] GET /nested/../del/keep.txt → 403
+  Attendu : 403
+  Recu    :  403 
+
+
+
+[T23] DELETE /../etc/passwd → 403
+  Attendu : 403
+  Recu    :  405 
+
+
+
+[T24] POST /upload/../../evil.txt → 403 (traversal filename)
+  Attendu : 403
+  Recu    :  201 
+
+
+
+[T25] GET /files/../../www/index.html → 403
+  Attendu : 403
+  Recu    :  403 
+
+
+
+[T26] DELETE /del/../del/keep.txt → 403
+  Attendu : 403
+  Recu    :  403 
+
+
+
+══════ POST ══════
+
+[T27] POST /upload/file1.txt → 201
+  Attendu : 201
+  Recu    :  201 
+
+
+
+[T28] POST /upload/file2.txt body vide → 201
+  Attendu : 201
+  Recu    :  201 
+
+
+
+[T29] POST /upload/big.txt body > 50 octets → 413
+  Attendu : 413
+  Recu    :  413 
+
+
+
+[T30] POST /upload/ → 400 (nom de fichier vide)
+  Attendu : 400
+  Recu    :  400 
+
+
+
+[T31] POST /index.html → 405 (POST interdit sur /)
+  Attendu : 405
+  Recu    :  405 
+
+
+
+[T32] POST /files/test.txt → 405 (POST interdit sur /files)
+  Attendu : 405
+  Recu    :  405 
+
+
+
+[T33] POST /del/test.txt → 405 (POST interdit sur /del)
+  Attendu : 405
+  Recu    :  405 
+
+
+
+[T34] POST /upload/valid.bin → 201 (upload binaire)
+  Attendu : 201
+  Recu    :  201 
+
+
+
+══════ DELETE ══════
+
+[T35] DELETE /del/to_delete1.txt → 204
+  Attendu : 204
+  Recu    :  204 
+
+
+
+[T36] DELETE /del/to_delete2.txt → 204
+  Attendu : 204
+  Recu    :  204 
+
+
+
+[T37] DELETE /del/to_delete3.txt → 204
+  Attendu : 204
+  Recu    :  204 
+
+
+
+[T38] DELETE /del/to_delete1.txt → 404 (déjà supprimé au T35)
+  Attendu : 404
+  Recu    :  404 
+
+
+
+[T39] DELETE /del/nonexistent.txt → 404
+  Attendu : 404
+  Recu    :  404 
+
+
+
+[T40] DELETE /del/ → 403 (tentative sur dossier)
+  Attendu : 403
+  Recu    :  403 
+
+
+
+[T41] DELETE /files/readme.txt → 204
+  Attendu : 204
+  Recu    :  204 
+
+
+
+══════ LOCATION MATCHING ══════
+
+[T42] GET /dir_autoindex/sub.txt → 200 (/dir_autoindex > /)
+  Attendu : 200
+  Recu    :  200 
+Content-Length: 17
+Content-Type: text/plain
+
+autoindex content
+
+[T43] GET /uploadmore/test → 404 (/uploadmore != /upload, matche /)
+  Attendu : 404
+  Recu    :  404 
+
+
+
+[T44] DELETE /files/data.json → 204 (DELETE autorisé sur /files)
+  Attendu : 204
+  Recu    :  204 
+
+
+
+[T45] GET /about/ → 403 (dossier sans index ni autoindex)
+  Attendu : 403
+  Recu    :  403 
+
+
+
+[T46] GET /nested/ → 404 (index.html absent dans ./www/nested/)
+  Attendu : 404
+  Recu    :  403 
+
+
+
+══════ EDGE CASES ══════
+
+[T47] PATCH /index.html → 405
+  Attendu : 405
+  Recu    :  405 
+
+
+
+[T48] HEAD /index.html → 405
+  Attendu : 405
+  Recu    :  405 
+
+
+
+[T49] PUT /upload/file.txt → 405
+  Attendu : 405
+  Recu    :  405 
+
+
+
+[T50] DELETE /del/to_delete2.txt → 404 (déjà supprimé au T36)
+  Attendu : 404
+  Recu    :  404 
+
+
+
