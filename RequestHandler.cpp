@@ -6,7 +6,7 @@
 /*   By: romukena <romukena@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/04/24 14:36:05 by romukena          #+#    #+#             */
-/*   Updated: 2026/04/30 01:36:46 by romukena         ###   ########.fr       */
+/*   Updated: 2026/04/30 02:24:10 by romukena         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -21,6 +21,44 @@
 #include <sstream>
 #include <string>
 #include <sys/stat.h>
+
+static bool isImplementedMethod(const std::string &m)
+{
+	return (m == "GET" || m == "POST" || m == "DELETE");
+}
+
+static std::string buildAllowHeader(const std::set<std::string> &allow)
+{
+	// Format: "GET, POST, DELETE"
+	std::string out;
+	for (std::set<std::string>::const_iterator it = allow.begin(); it != allow.end(); ++it)
+	{
+		if (!out.empty())
+			out += ", ";
+		out += *it;
+	}
+	return out;
+}
+
+static HttpResponse makeRedirectResponse(int code, const std::string &url)
+{
+	HttpResponse r;
+	r.addCode(code);
+	r.addHeadersResponse("Location", url);
+	// Body optionnel. (si tu veux, ajoute un petit html + Content-Length)
+	return r;
+}
+
+// Choix "sujet-friendly": si allow_methods est vide, on autorise au moins GET/POST/DELETE.
+static std::set<std::string> defaultAllowedMethodsIfEmpty(std::set<std::string> allow)
+{
+	if (!allow.empty())
+		return allow;
+	allow.insert("GET");
+	allow.insert("POST");
+	allow.insert("DELETE");
+	return allow;
+}
 
 int findLocation(ServerConfig server, HttpRequest req)
 {
@@ -127,12 +165,14 @@ HttpResponse Get(const HttpRequest &req, const ServerConfig &server)
 	HttpResponse response;
 	int valLocation = findLocation(server, req);
 	std::vector<LocationConfig> locations = server.getLocations();
-	if (locations.empty() || valLocation == -1)
+	if (!locations[valLocation].isMethodAllowed("GET") && !locations[valLocation].getAllowMethods().empty())
 	{
-		response.addCode(404);
+		response.addCode(405);
 		return response;
 	}
 	std::vector<std::string> indexes = locations[valLocation].getIndex();
+	if (indexes.empty())
+		indexes = server.getIndex();
 	std::string path = concatenatePath(server, req);
 	if (path.empty())
 	{
@@ -351,11 +391,27 @@ HttpResponse Post(const HttpRequest &req, const ServerConfig &server)
 		response.addCode(403);
 		return response;
 	}
-	std::string str(body.begin(), body.end());
-	file << str;
+	if (!body.empty())
+		file.write(reinterpret_cast<const char *>(&body[0]), body.size());
 	file.close();
 	response.addCode(201);
 	return response;
+}
+
+static void fillDefaultErrorBody(HttpResponse &resp)
+{
+	int code = resp.getCode();
+	// Simple pages
+	std::ostringstream html;
+	html << "<html><head><title>" << code << "</title></head>"
+		 << "<body><h1>" << code << "</h1></body></html>";
+	std::string body = html.str();
+
+	resp.addHeadersResponse("Content-Type", "text/html");
+	std::ostringstream len;
+	len << body.size();
+	resp.addHeadersResponse("Content-Length", len.str());
+	resp.addBodyResponse(body);
 }
 
 HttpResponse handleRequest(const HttpRequest &req, const ServerConfig &server)
@@ -368,27 +424,42 @@ HttpResponse handleRequest(const HttpRequest &req, const ServerConfig &server)
 		return response;
 	}
 	std::vector<LocationConfig> locations = server.getLocations();
+	LocationConfig &loc = locations[valLocation];
+	// Redirection: ne pas dépendre de hasRedirect() si le flag n'est pas maintenu
+	if (loc.getCode() >= 300 && loc.getCode() < 400 && !loc.getUrl().empty())
+	{
+		return makeRedirectResponse(loc.getCode(), loc.getUrl());
+	}
 	std::vector<unsigned char> body = req.getBody();
 	std::map<std::string, std::string> r = req.getRequest();
 	std::string uri = r["uri"];
-	std::set<std::string> allowMeth = locations[valLocation].getAllowMethods();
+	std::set<std::string> allowMeth = defaultAllowedMethodsIfEmpty(loc.getAllowMethods());
+	const std::string method = r["method"];
 
-	if (allowMeth.find(r["method"]) == allowMeth.end())
+	// Méthode non implémentée par le serveur -> 501
+	if (!isImplementedMethod(method))
+	{
+		response.addCode(501);
+		return response;
+	}
+
+	// Méthode implémentée mais pas autorisée dans cette location -> 405 + Allow
+	if (allowMeth.find(method) == allowMeth.end())
 	{
 		response.addCode(405);
+		response.addHeadersResponse("Allow", buildAllowHeader(allowMeth));
 		return response;
 	}
 
-	if (r["method"] == "GET")
+	if (method == "GET")
 		response = Get(req, server);
-	else if (r["method"] == "POST")
+	else if (method == "POST")
 		response = Post(req, server);
-	else if (r["method"] == "DELETE")
+	else if (method == "DELETE")
 		response = Delete(req, server);
-	else
-	{
-		response.addCode(404);
-		return response;
-	}
+
+	// Si code erreur et pas de body/headers => body défaut
+	if (response.getCode() >= 400)
+		fillDefaultErrorBody(response);
 	return response;
 }
