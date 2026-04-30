@@ -11,20 +11,21 @@
 /* ************************************************************************** */
 
 #include "LocationConfig.hpp"
-#include <limits>
 #include <cstdlib>
+#include <limits>
 
 LocationConfig::LocationConfig()
-	: _autoindex(false), _has_autoindex(false), _max_body(std::numeric_limits<std::size_t>::max()),
-	  _has_max_size(false), _return_code(-1), _return_url(""), _has_return(false), _root(""), _path(""), _upload_path(""),
-	  _alias("") {
+	: _autoindex(false), _has_autoindex(false),
+	  _max_body(std::numeric_limits<std::size_t>::max()), _has_max_size(false),
+	  _return_code(-1), _return_url(""), _has_return(false), _root(""),
+	  _path(""), _upload_path(""), _alias("") {
 }
 
 LocationConfig::~LocationConfig() {
 }
 
-LocationConfig parseLocation(std::vector<Token>::iterator &it, std::vector<Token>::iterator end)
-{
+LocationConfig parseLocation(std::vector<Token>::iterator &it,
+							 std::vector<Token>::iterator end) {
 	++it;
 	if (it == end)
 		throw std::runtime_error("Location empty");
@@ -37,45 +38,39 @@ LocationConfig parseLocation(std::vector<Token>::iterator &it, std::vector<Token
 	if (it == end || *it != "{")
 		throw std::runtime_error("Location should start with '{'");
 	++it;
-	while (it != end && *it != "}")
-	{
-		if (*it == "root")
-		{
+	while (it != end && *it != "}") {
+		if (*it == "root") {
 			if (!location.getRoot().empty())
-				throw std::runtime_error("Mutiple definition of root on location");
+				throw std::runtime_error(
+					"Mutiple definition of root on location");
 			location.setRoot(parseSingleValueDirective(it, end, it->value));
-		}
-		else if (*it == "alias")
-		{
-    	if (!location.getAlias().empty())
-				throw std::runtime_error("Mutiple definition of Alias on location");
+		} else if (*it == "alias") {
+			if (!location.getAlias().empty())
+				throw std::runtime_error(
+					"Mutiple definition of Alias on location");
 			location.setAlias(parseSingleValueDirective(it, end, it->value));
-		}
-		else if (*it == "autoindex")
-    	parseAutoindex(it, end, location);
+		} else if (*it == "autoindex")
+			parseAutoindex(it, end, location);
 		else if (*it == "allow_methods")
-    	parseAllowMethods(it, end, location);
+			parseAllowMethods(it, end, location);
 		else if (*it == "index")
-    	parseIndex(it, end, location);
-		else if (*it == "upload_path")
-		{
+			parseIndex(it, end, location);
+		else if (*it == "upload_path") {
 			if (!location.getUploadPath().empty())
 				throw std::runtime_error("Mutilple definition of upload path");
-			location.setUploadPath(parseSingleValueDirective(it, end, it->value));
-		}
-		else if (*it == "client_max_body_size")
-    {
+			location.setUploadPath(
+				parseSingleValueDirective(it, end, it->value));
+		} else if (*it == "client_max_body_size") {
 			if (location.gethasmaxsize() == true)
 				throw std::runtime_error("Multiple definitions of body_size");
 			location.setMaxBody(findSize(it, end));
 			location.sethasmaxsize(true);
-		}
-		else if (*it == "cgi_extension")
-    	parseCgiExtension(it, end, location);
+		} else if (*it == "cgi_extension")
+			parseCgiExtension(it, end, location);
 		else if (*it == "return")
-    	parseReturn(it, end, location);
+			parseReturn(it, end, location);
 		else
-    	throw std::runtime_error("Unknown directive in location");
+			throw std::runtime_error("Unknown directive in location");
 	}
 	if (it == end)
 		throw std::runtime_error("Missing bracket");
@@ -83,8 +78,9 @@ LocationConfig parseLocation(std::vector<Token>::iterator &it, std::vector<Token
 	return location;
 }
 
-void	parseReturn(std::vector<Token>::iterator &it, std::vector<Token>::iterator end, LocationConfig &location)
-{
+void parseReturn(std::vector<Token>::iterator &it,
+				 std::vector<Token>::iterator end,
+				 LocationConfig &location) {
 	int code;
 	std::string path;
 
@@ -110,13 +106,15 @@ void	parseReturn(std::vector<Token>::iterator &it, std::vector<Token>::iterator 
 	++it; // skip ;
 }
 
-void	parseCgiExtension(std::vector<Token>::iterator &it, std::vector<Token>::iterator end, LocationConfig &location)
-{
+void parseCgiExtension(std::vector<Token>::iterator &it,
+					   std::vector<Token>::iterator end,
+					   LocationConfig &location) {
 	std::string extension;
 	std::string path;
 
 	++it;
-	if (it == end || ((*it == "{" || *it == "}" || *it == ";") && !it->in_quotes))
+	if (it == end
+		|| ((*it == "{" || *it == "}" || *it == ";") && !it->in_quotes))
 		throw std::runtime_error("cgi extension: missing value");
 	extension = it->value;
 	++it;
@@ -132,23 +130,25 @@ void	parseCgiExtension(std::vector<Token>::iterator &it, std::vector<Token>::ite
 	location.addCgiExtension(extension, path);
 }
 
-std::string parseSingleValueDirective(std::vector<Token>::iterator &it, std::vector<Token>::iterator end, const std::string &name)
-{
-    ++it;
-    if (it == end)
-        throw std::runtime_error(name + ": missing value");
-    if ((*it == "{" || *it == "}" || *it == ";") && !it->in_quotes)
-        throw std::runtime_error(name + ": invalid value");
-    std::string value = it->value;
-    ++it;
-    if (it == end || *it != ";" || it->in_quotes)
-        throw std::runtime_error(name + ": expected ';'");
-		++it; // skip ;
-    return value;
+std::string parseSingleValueDirective(std::vector<Token>::iterator &it,
+									  std::vector<Token>::iterator end,
+									  const std::string &name) {
+	++it;
+	if (it == end)
+		throw std::runtime_error(name + ": missing value");
+	if ((*it == "{" || *it == "}" || *it == ";") && !it->in_quotes)
+		throw std::runtime_error(name + ": invalid value");
+	std::string value = it->value;
+	++it;
+	if (it == end || *it != ";" || it->in_quotes)
+		throw std::runtime_error(name + ": expected ';'");
+	++it; // skip ;
+	return value;
 }
 
-void parseIndex(std::vector<Token>::iterator &it, std::vector<Token>::iterator end, LocationConfig &location)
-{
+void parseIndex(std::vector<Token>::iterator &it,
+				std::vector<Token>::iterator end,
+				LocationConfig &location) {
 	std::vector<std::string> index;
 	std::vector<std::string> tmp = location.getIndex();
 
@@ -157,8 +157,7 @@ void parseIndex(std::vector<Token>::iterator &it, std::vector<Token>::iterator e
 	++it;
 	if (it == end)
 		throw std::runtime_error("Index: missing value");
-	while (it != end && (*it != ";" || it->in_quotes))
-	{
+	while (it != end && (*it != ";" || it->in_quotes)) {
 		if (*it == "}" || *it == "{")
 			throw std::runtime_error("Index: brace in index forbidden");
 		index.push_back(it->value);
@@ -172,8 +171,9 @@ void parseIndex(std::vector<Token>::iterator &it, std::vector<Token>::iterator e
 	location.setIndex(index);
 }
 
-void	parseAllowMethods(std::vector<Token>::iterator &it, std::vector<Token>::iterator end, LocationConfig &location)
-{
+void parseAllowMethods(std::vector<Token>::iterator &it,
+					   std::vector<Token>::iterator end,
+					   LocationConfig &location) {
 	std::set<std::string> allowmethod;
 	const std::set<std::string> tmp = location.getAllowMethods();
 
@@ -182,12 +182,12 @@ void	parseAllowMethods(std::vector<Token>::iterator &it, std::vector<Token>::ite
 	++it;
 	if (it == end)
 		throw std::runtime_error("allow_methods: missing value");
-	while (it != end && (*it != ";" && !it->in_quotes))
-	{
+	while (it != end && (*it != ";" && !it->in_quotes)) {
 		if (*it == "}" || *it == "{")
 			throw std::runtime_error("allow_methods: brace in name forbidden");
 		if (*it != "GET" && *it != "POST" && *it != "DELETE")
-			throw std::runtime_error("allow_methods: invalid value " + it->value);
+			throw std::runtime_error("allow_methods: invalid value "
+									 + it->value);
 		if (!location.isMethodAllowed(it->value))
 			throw std::runtime_error("allow_methods: Multiple same method");
 		allowmethod.insert(it->value);
@@ -201,8 +201,9 @@ void	parseAllowMethods(std::vector<Token>::iterator &it, std::vector<Token>::ite
 	location.setAllowMethods(allowmethod);
 }
 
-void parseAutoindex(std::vector<Token>::iterator &it, std::vector<Token>::iterator end, LocationConfig &location)
-{
+void parseAutoindex(std::vector<Token>::iterator &it,
+					std::vector<Token>::iterator end,
+					LocationConfig &location) {
 	if (location.gethasAutoindex())
 		throw std::runtime_error("Multiple definition of Auto index");
 	++it;
@@ -221,8 +222,9 @@ void parseAutoindex(std::vector<Token>::iterator &it, std::vector<Token>::iterat
 	location.sethasAutoindex(true);
 }
 
-void parseAlias(std::vector<std::string>::iterator &it, std::vector<std::string>::iterator end, LocationConfig &location)
-{
+void parseAlias(std::vector<std::string>::iterator &it,
+				std::vector<std::string>::iterator end,
+				LocationConfig &location) {
 	std::string alias = location.getAlias();
 	if (!alias.empty())
 		throw std::runtime_error("Mutiple definition of alias on location");
@@ -239,8 +241,9 @@ void parseAlias(std::vector<std::string>::iterator &it, std::vector<std::string>
 	location.setAlias(s);
 }
 
-void parseRoot(std::vector<std::string>::iterator &it, std::vector<std::string>::iterator end, LocationConfig &location)
-{
+void parseRoot(std::vector<std::string>::iterator &it,
+			   std::vector<std::string>::iterator end,
+			   LocationConfig &location) {
 	std::string root = location.getRoot();
 	if (!root.empty())
 		throw std::runtime_error("Mutiple definition of root on location");
@@ -269,8 +272,7 @@ size_t LocationConfig::getMaxBody() const {
 	return _max_body;
 }
 
-bool LocationConfig::gethasmaxsize() const
-{
+bool LocationConfig::gethasmaxsize() const {
 	return _has_max_size;
 }
 
@@ -316,16 +318,17 @@ void LocationConfig::setMaxBody(size_t v) {
 	_max_body = v;
 }
 
-void LocationConfig::sethasmaxsize(bool v)
-{
-	_has_max_size = v;	
+void LocationConfig::sethasmaxsize(bool v) {
+	_has_max_size = v;
 }
 
 void LocationConfig::setCode(int v) {
 	_return_code = v;
+	_has_return = true;
 }
 void LocationConfig::setUrl(const std::string &v) {
 	_return_url = v;
+	_has_return = true;
 }
 void LocationConfig::setRoot(const std::string &v) {
 	_root = v;
@@ -355,8 +358,8 @@ void LocationConfig::addMethod(const std::string &method) {
 	_allow_methods.insert(method);
 }
 
-void LocationConfig::addCgiExtension(const std::string &ext, const std::string &interpreter)
-{
+void LocationConfig::addCgiExtension(const std::string &ext,
+									 const std::string &interpreter) {
 	if (this->hasCgi(ext))
 		throw std::runtime_error("Duplicate CGI extension: " + ext);
 	_cgi_extension[ext] = interpreter;
@@ -376,8 +379,7 @@ bool LocationConfig::hasRedirect() const {
 	return _has_return;
 }
 
-std::ostream &operator<<(std::ostream &os, const LocationConfig &loc)
-{
+std::ostream &operator<<(std::ostream &os, const LocationConfig &loc) {
 	os << "----- LOCATION -----\n";
 
 	if (loc.gethasAutoindex())
@@ -386,14 +388,13 @@ std::ostream &operator<<(std::ostream &os, const LocationConfig &loc)
 	if (loc.getMaxBody() != 0)
 		os << "max_body: " << loc.getMaxBody() << "\n";
 
-	if (loc.hasRedirect())
-	{
+	if (loc.hasRedirect()) {
 		os << "return code: " << loc.getCode() << "\n";
 		os << "return url: " << loc.getUrl() << "\n";
 	}
 
 	// if (!loc.getRoot().empty())
-		os << "root: " << loc.getRoot() << "\n";
+	os << "root: " << loc.getRoot() << "\n";
 
 	if (!loc.getPath().empty())
 		os << "path: " << loc.getPath() << "\n";
@@ -404,28 +405,29 @@ std::ostream &operator<<(std::ostream &os, const LocationConfig &loc)
 	if (!loc.getUploadPath().empty())
 		os << "upload_path: " << loc.getUploadPath() << "\n";
 
-	if (!loc.getIndex().empty())
-	{
+	if (!loc.getIndex().empty()) {
 		os << "index: ";
 		for (size_t i = 0; i < loc.getIndex().size(); i++)
 			os << loc.getIndex()[i] << " ";
 		os << "\n";
 	}
 
-	if (!loc.getAllowMethods().empty())
-	{
+	if (!loc.getAllowMethods().empty()) {
 		os << "allow_methods: ";
-		for (std::set<std::string>::const_iterator it = loc.getAllowMethods().begin();
-			 it != loc.getAllowMethods().end(); ++it)
+		for (std::set<std::string>::const_iterator it =
+				 loc.getAllowMethods().begin();
+			 it != loc.getAllowMethods().end();
+			 ++it)
 			os << *it << " ";
 		os << "\n";
 	}
 
-	if (!loc.getCgiExtension().empty())
-	{
+	if (!loc.getCgiExtension().empty()) {
 		os << "cgi_extension:\n";
-		for (std::map<std::string, std::string>::const_iterator it = loc.getCgiExtension().begin();
-			 it != loc.getCgiExtension().end(); ++it)
+		for (std::map<std::string, std::string>::const_iterator it =
+				 loc.getCgiExtension().begin();
+			 it != loc.getCgiExtension().end();
+			 ++it)
 			os << "  " << it->first << " -> " << it->second << "\n";
 	}
 
