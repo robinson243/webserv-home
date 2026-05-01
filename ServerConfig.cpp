@@ -6,7 +6,7 @@
 /*   By: ydembele <ydembele@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/04/16 13:40:39 by ydembele          #+#    #+#             */
-/*   Updated: 2026/05/01 14:50:23 by ydembele         ###   ########.fr       */
+/*   Updated: 2026/05/01 15:00:16 by ydembele         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -335,7 +335,6 @@ bool isValidHost(const std::string &host)
         if (i < host.size() && host[i] == '.')
             i++;
     }
-
     return (parts == 4);
 }
 
