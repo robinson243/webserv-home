@@ -6,7 +6,7 @@
 /*   By: ydembele <ydembele@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/04/14 15:01:30 by romukena          #+#    #+#             */
-/*   Updated: 2026/05/01 15:44:27 by ydembele         ###   ########.fr       */
+/*   Updated: 2026/05/01 15:58:04 by ydembele         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -53,18 +53,6 @@ struct Token
 };
 
 class LocationConfig;
-
-struct Token
-{
-	std::string value;
-	bool in_quotes;
-
-	Token() : value(""), in_quotes(false) {}
-
-	Token(const std::string &v) : value(v), in_quotes(false) {}
-
-	Token(const std::string &v, bool q) : value(v), in_quotes(q) {}
-};
 
 class ServerConfig {
 private:
