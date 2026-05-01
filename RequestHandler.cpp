@@ -6,7 +6,7 @@
 /*   By: romukena <romukena@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/04/24 14:36:05 by romukena          #+#    #+#             */
-/*   Updated: 2026/05/01 13:18:03 by romukena         ###   ########.fr       */
+/*   Updated: 2026/05/01 13:25:23 by romukena         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -421,7 +421,6 @@ HttpResponse Delete(const HttpRequest &req, const ServerConfig &server)
 
 HttpResponse Post(const HttpRequest &req, const ServerConfig &server)
 {
-	struct stat st;
 	HttpResponse response;
 	int valLocation = findLocation(server, req);
 	std::vector<LocationConfig> locations = server.getLocations();
@@ -431,7 +430,9 @@ HttpResponse Post(const HttpRequest &req, const ServerConfig &server)
 		response.addCode(404);
 		return response;
 	}
+
 	const LocationConfig &loc = locations[valLocation];
+
 	if (loc.hasRedirect())
 	{
 		HttpResponse resp;
@@ -439,9 +440,10 @@ HttpResponse Post(const HttpRequest &req, const ServerConfig &server)
 		resp.addHeadersResponse("Location", loc.getUrl());
 		return resp;
 	}
-	std::vector<unsigned char> body = req.getBody();
 
+	std::vector<unsigned char> body = req.getBody();
 	std::map<std::string, std::string> headers = req.getHeaders();
+
 	if (body.empty())
 	{
 		response.addCode(400);
@@ -450,9 +452,7 @@ HttpResponse Post(const HttpRequest &req, const ServerConfig &server)
 
 	bool hasContentLength = (headers.find("Content-Length") != headers.end());
 	bool isChunked = false;
-
-	std::map<std::string, std::string>::iterator itTE =
-		headers.find("Transfer-Encoding");
+	std::map<std::string, std::string>::iterator itTE = headers.find("Transfer-Encoding");
 	if (itTE != headers.end() && itTE->second == "chunked")
 		isChunked = true;
 
@@ -461,14 +461,10 @@ HttpResponse Post(const HttpRequest &req, const ServerConfig &server)
 		response.addCode(400);
 		return response;
 	}
-	if (locations[valLocation].gethasmaxsize() && locations[valLocation].getMaxBody() < body.size())
+
+	if (loc.gethasmaxsize() && loc.getMaxBody() < body.size())
 	{
 		response.addCode(413);
-		return response;
-	}
-	if (locations[valLocation].getUploadPath().empty())
-	{
-		response.addCode(500);
 		return response;
 	}
 
@@ -479,34 +475,39 @@ HttpResponse Post(const HttpRequest &req, const ServerConfig &server)
 		response.addCode(400);
 		return response;
 	}
-	std::string URI;
-	size_t p = uri.find_last_of("/");
+
+	std::string filename;
+	size_t p = uri.find_last_of('/');
 	if (p == std::string::npos)
-		URI = uri;
+		filename = uri;
 	else
-		URI = uri.substr(p + 1);
-	if (URI.empty())
-	{
-		response.addCode(400);
-		return response;
-	}
-	if (URI.find("..") != std::string::npos)
+		filename = uri.substr(p + 1);
+
+	if (filename.empty() || filename.find("..") != std::string::npos)
 	{
 		response.addCode(403);
 		return response;
 	}
 
-	std::string uploadPath = locations[valLocation].getUploadPath();
-	std::string path = uploadPath + "/" + URI;
+	std::string baseDir = loc.getUploadPath().empty() ? loc.getRoot() : loc.getUploadPath();
+	if (baseDir.empty())
+	{
+		response.addCode(500);
+		return response;
+	}
+
+	std::string path = baseDir + "/" + filename;
+
 	std::ofstream file(path.c_str(), std::ios::binary);
 	if (!file.is_open())
 	{
 		response.addCode(403);
 		return response;
 	}
-	if (!body.empty())
-		file.write(reinterpret_cast<const char *>(&body[0]), body.size());
+
+	file.write(reinterpret_cast<const char *>(&body[0]), body.size());
 	file.close();
+
 	response.addCode(201);
 	return response;
 }
