@@ -6,7 +6,7 @@
 /*   By: ydembele <ydembele@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/04/14 15:01:30 by romukena          #+#    #+#             */
-/*   Updated: 2026/04/28 15:09:42 by ydembele         ###   ########.fr       */
+/*   Updated: 2026/05/01 14:24:09 by ydembele         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -110,6 +110,10 @@ void	parseErrorPage(std::vector<Token>::iterator &it, std::vector<Token>::iterat
 size_t findSize(std::vector<Token>::iterator &it, std::vector<Token>::iterator end);
 void validateServer(ServerConfig &server);
 std::map<int, std::vector<ServerConfig*> > groupServersByPort(const std::vector<ServerConfig> &servers);
+ServerConfig *selectServer(int port, std::string host, std::vector<ServerConfig> &servers);
+LocationConfig selectLocation(std::string uri, ServerConfig &servers);
+std::vector<ListenSocket> buildListenSockets(std::vector<ServerConfig> &servers);
+
 
 bool operator==(const Token &t, const std::string &s);
 bool operator!=(const Token &t, const std::string &s);
