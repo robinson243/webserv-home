@@ -6,7 +6,7 @@
 /*   By: ydembele <ydembele@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/04/16 13:40:39 by ydembele          #+#    #+#             */
-/*   Updated: 2026/05/01 15:00:16 by ydembele         ###   ########.fr       */
+/*   Updated: 2026/05/01 15:51:06 by ydembele         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -132,7 +132,6 @@ void validateServer(ServerConfig &server)
 			loc.setIndex(server.getIndex());
 		if (loc.gethasmaxsize() == 0 && server.getHasMaxSize())
 			loc.setMaxBody(server.getBodySizeClient());
-		
 	}
 }
 
@@ -155,7 +154,7 @@ ServerConfig parseServer(std::vector<Token>::iterator &it, std::vector<Token>::i
 
 void parseDirective(std::vector<Token>::iterator &it, std::vector<Token>::iterator end, ServerConfig &server)
 {
-	std::string directives[7] = {"listen", "server_name", "root", "index", "error_page", "client_max_body_size", "location"};
+	const std::string directives[]  = {"listen", "server_name", "root", "index", "error_page", "client_max_body_size", "location"};
 	int i = 0;
 	while (i < 7 && it->value != directives[i])
 		i++;
@@ -218,34 +217,34 @@ size_t findSize(std::vector<Token>::iterator &it, std::vector<Token>::iterator e
 	++it;
 	if (it == end)
 		throw std::runtime_error("client_max_body_size: missing value");
-	char *d;
-	long value = std::strtol(it->value.c_str(), &d, 10);
-
-	if (*d != '\0')
-    	throw std::runtime_error("client_max_body_size: invalid number");
-	if (value < 0)
-    	throw std::runtime_error("client_max_body_size: negative value");
+	if (!isNumber(it->value))
+    throw std::runtime_error("client_max_body_size: Invalid body size");
+	size_t value = strtoul((it->value).c_str(), NULL, 10);
+	if (value == 0)
+    throw std::runtime_error("client_max_body_size: Body size must be > 0");
 	++it;
 	if (it == end || *it != ";" || it->in_quotes)
 		throw std::runtime_error("client_max_body_size: Body size: missing ';");
 	++it;
-	return static_cast<size_t>(value);
+	return value;
 }
 
 void	parseErrorPage(std::vector<Token>::iterator &it, std::vector<Token>::iterator end, ServerConfig &server)
 {
 	std::string path;
-
+	int code;
+	
 	++it;
 	if (it == end)
 		throw std::runtime_error("Error page: missing value");
-	char *d;
-	long code;
-	
-	code = std::strtol(it->value.c_str(), &d, 10);
-	
-	if (*d != '\0')
-		throw std::runtime_error("Error page: invalid number");
+	try
+	{
+		code = atoi(it->value.c_str());
+	}
+	catch (...)
+	{
+		throw std::runtime_error("Error page: invalid code format");
+	}
 	if (code < 100 || code > 599)
 		throw std::runtime_error("Error page: invalid code range [100-599]");
 	++it;
@@ -258,7 +257,7 @@ void	parseErrorPage(std::vector<Token>::iterator &it, std::vector<Token>::iterat
 	if (it == end || *it != ";" || it->in_quotes)
 		throw std::runtime_error("Error page: ';'");
 	++it;
-	server.setErrorPage(static_cast<int>(code), path);
+	server.setErrorPage(code, path);
 }
 
 std::vector<std::string> findIndex(std::vector<Token>::iterator &it, std::vector<Token>::iterator end)

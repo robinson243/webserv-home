@@ -6,11 +6,12 @@
 /*   By: ydembele <ydembele@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/04/14 13:44:36 by romukena          #+#    #+#             */
-/*   Updated: 2026/04/28 15:21:28 by ydembele         ###   ########.fr       */
+/*   Updated: 2026/05/01 15:50:00 by ydembele         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "LocationConfig.hpp"
+#include <cstdlib>
 #include <limits>
 #include <cstdlib>
 
@@ -200,7 +201,7 @@ void	parseAllowMethods(std::vector<Token>::iterator &it, std::vector<Token>::ite
 		throw std::runtime_error("allow_methods: unterminated directive");
 	if (allowmethod.empty())
 		throw std::runtime_error("allow_methods: no names provided");
-	++it; // Skip ;
+	++it;
 	location.setAllowMethods(allowmethod);
 }
 
@@ -326,9 +327,11 @@ void LocationConfig::sethasmaxsize(bool v)
 
 void LocationConfig::setCode(int v) {
 	_return_code = v;
+	_has_return = true;
 }
 void LocationConfig::setUrl(const std::string &v) {
 	_return_url = v;
+	_has_return = true;
 }
 void LocationConfig::setRoot(const std::string &v) {
 	_root = v;
@@ -395,7 +398,7 @@ std::ostream &operator<<(std::ostream &os, const LocationConfig &loc)
 		os << "return url: " << loc.getUrl() << "\n";
 	}
 
-	// if (!loc.getRoot().empty())
+	if (!loc.getRoot().empty())
 		os << "root: " << loc.getRoot() << "\n";
 
 	if (!loc.getPath().empty())
