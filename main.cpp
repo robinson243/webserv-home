@@ -24,34 +24,33 @@ static void addMethods(LocationConfig &loc,
 
 static ServerConfig buildServer() {
     ServerConfig server;
-    server.setRoot("./output/webserv_delete_suite/www");
+    server.setRoot("./output/webserv_get_suite/www");
     server.setIndex(std::vector<std::string>(1, "index.html"));
 
     LocationConfig root;
     root.setPath("/");
-    root.setRoot("./output/webserv_delete_suite/www");
-    root.setIndex(std::vector<std::string>(1, "index.html"));
+    root.setRoot("./output/webserv_get_suite/www");
     addMethods(root, "DELETE");
 
-    LocationConfig files;
-    files.setPath("/files");
-    files.setRoot("./output/webserv_delete_suite/www/files");
-    addMethods(files, "DELETE");
+    LocationConfig deletezone;
+    deletezone.setPath("/deletezone");
+    deletezone.setRoot("./output/webserv_get_suite/www/deletezone");
+    addMethods(deletezone, "DELETE");
 
-    LocationConfig locked;
-    locked.setPath("/locked");
-    locked.setRoot("./output/webserv_delete_suite/www/locked");
-    addMethods(locked, "DELETE");
+    LocationConfig upload;
+    upload.setPath("/upload");
+    upload.setRoot("./output/webserv_get_suite/www/upload");
+    addMethods(upload, "GET", "POST");
 
-    LocationConfig noDelete;
-    noDelete.setPath("/nodelete");
-    noDelete.setRoot("./output/webserv_delete_suite/www/nodelete");
-    addMethods(noDelete, "GET");
+    LocationConfig dir;
+    dir.setPath("/dir");
+    dir.setRoot("./output/webserv_get_suite/www/dir");
+    addMethods(dir, "DELETE");
 
     server.setLocations(root);
-    server.setLocations(files);
-    server.setLocations(locked);
-    server.setLocations(noDelete);
+    server.setLocations(deletezone);
+    server.setLocations(upload);
+    server.setLocations(dir);
     return server;
 }
 
@@ -69,53 +68,71 @@ int main() {
     ServerConfig server = buildServer();
     std::vector<TestCase> tests;
 
-    tests.push_back((TestCase){ "DELETE existing file",
-                                "DELETE /files/delete_me.txt HTTP/1.1\r\nHost: localhost\r\n\r\n",
-                                204 });
+    tests.push_back((TestCase){
+        "DELETE existing file",
+        "DELETE /deletezone/delete_me.txt HTTP/1.1\r\nHost: localhost\r\n\r\n",
+        204
+    });
 
-    tests.push_back((TestCase){ "DELETE missing file",
-                                "DELETE /files/missing.txt HTTP/1.1\r\nHost: localhost\r\n\r\n",
-                                404 });
+    tests.push_back((TestCase){
+        "DELETE second existing file",
+        "DELETE /deletezone/delete_me_2.txt HTTP/1.1\r\nHost: localhost\r\n\r\n",
+        204
+    });
 
-    tests.push_back((TestCase){ "DELETE root existing file",
-                                "DELETE /delete_root.txt HTTP/1.1\r\nHost: localhost\r\n\r\n",
-                                204 });
+    tests.push_back((TestCase){
+        "DELETE missing file",
+        "DELETE /deletezone/missing.txt HTTP/1.1\r\nHost: localhost\r\n\r\n",
+        404
+    });
 
-    tests.push_back((TestCase){ "DELETE root missing file",
-                                "DELETE /missing_root.txt HTTP/1.1\r\nHost: localhost\r\n\r\n",
-                                404 });
+    tests.push_back((TestCase){
+        "DELETE directory at deletezone",
+        "DELETE /deletezone HTTP/1.1\r\nHost: localhost\r\n\r\n",
+        403
+    });
 
-    tests.push_back((TestCase){ "DELETE directory",
-                                "DELETE /files/subdir HTTP/1.1\r\nHost: localhost\r\n\r\n",
-                                403 });
+    tests.push_back((TestCase){
+        "DELETE existing directory with slash",
+        "DELETE /dir/ HTTP/1.1\r\nHost: localhost\r\n\r\n",
+        403
+    });
 
-    tests.push_back((TestCase){ "DELETE locked directory",
-                                "DELETE /locked HTTP/1.1\r\nHost: localhost\r\n\r\n",
-                                403 });
+    tests.push_back((TestCase){
+        "DELETE traversal direct",
+        "DELETE /deletezone/../upload/file1.txt HTTP/1.1\r\nHost: localhost\r\n\r\n",
+        403
+    });
 
-    tests.push_back((TestCase){ "DELETE path traversal",
-                                "DELETE /files/../hack.txt HTTP/1.1\r\nHost: localhost\r\n\r\n",
-                                403 });
+    tests.push_back((TestCase){
+        "DELETE traversal nested",
+        "DELETE /deletezone/sub/../delete_me.txt HTTP/1.1\r\nHost: localhost\r\n\r\n",
+        403
+    });
 
-    tests.push_back((TestCase){ "DELETE path traversal nested",
-                                "DELETE /files/sub/../hack.txt HTTP/1.1\r\nHost: localhost\r\n\r\n",
-                                403 });
+    tests.push_back((TestCase){
+        "DELETE unknown location",
+        "DELETE /ghost/file.txt HTTP/1.1\r\nHost: localhost\r\n\r\n",
+        404
+    });
 
-    tests.push_back((TestCase){ "DELETE unknown location",
-                                "DELETE /ghost/file.txt HTTP/1.1\r\nHost: localhost\r\n\r\n",
-                                404 });
+    tests.push_back((TestCase){
+        "DELETE empty uri",
+        "DELETE  HTTP/1.1\r\nHost: localhost\r\n\r\n",
+        400
+    });
 
-    tests.push_back((TestCase){ "DELETE empty uri",
-                                "DELETE  HTTP/1.1\r\nHost: localhost\r\n\r\n",
-                                404 });
+    tests.push_back((TestCase){
+        "DELETE uri only slash",
+        "DELETE / HTTP/1.1\r\nHost: localhost\r\n\r\n",
+        403
+    });
 
-    tests.push_back((TestCase){ "DELETE uri only slash",
-                                "DELETE / HTTP/1.1\r\nHost: localhost\r\n\r\n",
-                                403 });
-
-    tests.push_back((TestCase){ "DELETE malformed header",
-                                "DELETE /files/delete_me.txt HTTP/1.1\r\nHost localhost\r\n\r\n",
-                                400 });
+    tests.push_back((TestCase){
+        "DELETE malformed header",
+        "DELETE /deletezone/delete_me.txt HTTP/1.1\r\nHost localhost\r\n\r\n",
+        400
+    });
 
     for (size_t i = 0; i < tests.size(); ++i)
         run(tests[i], server);
