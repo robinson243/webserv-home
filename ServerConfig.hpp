@@ -6,7 +6,7 @@
 /*   By: ydembele <ydembele@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/04/14 15:01:30 by romukena          #+#    #+#             */
-/*   Updated: 2026/04/22 15:49:49 by ydembele         ###   ########.fr       */
+/*   Updated: 2026/05/01 14:24:09 by ydembele         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -15,11 +15,30 @@
 
 #include <climits>
 #include <iostream>
+#include <string.h>
 #include <map>
 #include <set>
 #include <vector>
+#include <sys/types.h>
+#include <sys/socket.h>
+
+#include <netinet/in.h>
+#include <netinet/ip.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
 
 class LocationConfig;
+class ServerConfig;
+
+struct ListenSocket
+{
+    std::string host;
+    unsigned int port;
+    int fd;
+    sockaddr_in addr;
+
+    std::vector<ServerConfig*> servers;
+};
 
 struct Token
 {
@@ -37,6 +56,7 @@ class ServerConfig {
 private:
 	std::vector<std::string> _data;
 	std::vector<unsigned int> _port;
+	std::vector<std::string> _listenHost;
 	std::vector<std::string> _serverName;
 	std::string _root;
 	std::vector<std::string> _index;
@@ -50,9 +70,11 @@ private:
 	ServerConfig &operator=(const ServerConfig &other);
 	ServerConfig(const ServerConfig &other);
 	~ServerConfig();
+	
 
 	void	parsConfig(std::vector<std::string> &data);
 	std::vector<unsigned int> getPort() const;
+	std::vector<std::string> getListenHosts() const;
 	std::vector<std::string> getServerName() const;
 	std::string getRoot() const;
 	std::vector<std::string> getIndex() const;
@@ -62,6 +84,7 @@ private:
 	std::vector<LocationConfig>& getLocations();
 	const std::vector<LocationConfig>& getLocations() const;
 
+	void	setListenHost(std::string s);
 	void	setPort(unsigned int port);
 	void	setServerName(std::vector<std::string> Servername);
 	void	setRoot(std::string root);
@@ -79,14 +102,18 @@ std::string	LoadConfigFile(const std::string &file);
 std::vector<ServerConfig> pars(const std::string &file);
 ServerConfig parseServer(std::vector<Token>::iterator &it, std::vector<Token>::iterator end);
 void parseDirective(std::vector<Token>::iterator &it, std::vector<Token>::iterator end, ServerConfig &server);
-unsigned int findPort(std::vector<Token>::iterator &it, std::vector<Token>::iterator end);
+void findPort(std::vector<Token>::iterator &it, std::vector<Token>::iterator end, ServerConfig &server);
 std::vector<std::string> findServerName(std::vector<Token>::iterator &it, std::vector<Token>::iterator end);
 std::string findRoot(std::vector<Token>::iterator &it, std::vector<Token>::iterator end);
 std::vector<std::string> findIndex(std::vector<Token>::iterator &it, std::vector<Token>::iterator end);
 void	parseErrorPage(std::vector<Token>::iterator &it, std::vector<Token>::iterator end, ServerConfig &server);
 size_t findSize(std::vector<Token>::iterator &it, std::vector<Token>::iterator end);
 void validateServer(ServerConfig &server);
-std::map<int, std::vector<ServerConfig*>> groupServersByPort(const std::vector<ServerConfig> &servers);
+std::map<int, std::vector<ServerConfig*> > groupServersByPort(const std::vector<ServerConfig> &servers);
+ServerConfig *selectServer(int port, std::string host, std::vector<ServerConfig> &servers);
+LocationConfig selectLocation(std::string uri, ServerConfig &servers);
+std::vector<ListenSocket> buildListenSockets(std::vector<ServerConfig> &servers);
+
 
 bool operator==(const Token &t, const std::string &s);
 bool operator!=(const Token &t, const std::string &s);
