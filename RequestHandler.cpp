@@ -6,7 +6,7 @@
 /*   By: romukena <romukena@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/04/24 14:36:05 by romukena          #+#    #+#             */
-/*   Updated: 2026/05/01 01:59:14 by romukena         ###   ########.fr       */
+/*   Updated: 2026/05/01 13:18:03 by romukena         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -532,38 +532,53 @@ static void fillDefaultErrorBody(HttpResponse &resp)
 HttpResponse handleRequest(const HttpRequest &req, const ServerConfig &server)
 {
 	HttpResponse response;
+
+	if (!req.getValid())
+	{
+		response.addCode(req.getCode());
+		fillDefaultErrorBody(response);
+		return response;
+	}
+
 	int valLocation = findLocation(server, req);
 	if (valLocation == -1)
 	{
 		response.addCode(404);
+		fillDefaultErrorBody(response);
 		return response;
 	}
-	std::vector<LocationConfig> locations = server.getLocations();
-	LocationConfig &loc = locations[valLocation];
-	// Redirection: ne pas dépendre de hasRedirect() si le flag n'est pas
-	// maintenu
+
+	const std::vector<LocationConfig> &locations = server.getLocations();
+	const LocationConfig &loc = locations[valLocation];
+
 	if (loc.getCode() >= 300 && loc.getCode() < 400 && !loc.getUrl().empty())
-	{
 		return makeRedirectResponse(loc.getCode(), loc.getUrl());
+
+	const std::map<std::string, std::string> &r = req.getRequest();
+	std::map<std::string, std::string>::const_iterator it = r.find("method");
+	if (it == r.end())
+	{
+		response.addCode(400);
+		fillDefaultErrorBody(response);
+		return response;
 	}
-	std::map<std::string, std::string> r = req.getRequest();
-	std::string uri = r["uri"];
+
+	const std::string &method = it->second;
 	std::set<std::string> allowMeth =
 		defaultAllowedMethodsIfEmpty(loc.getAllowMethods());
-	const std::string method = r["method"];
 
-	// Méthode non implémentée par le serveur -> 501
 	if (!isImplementedMethod(method))
 	{
 		response.addCode(501);
+		fillDefaultErrorBody(response);
 		return response;
 	}
 
-	// Méthode implémentée mais pas autorisée dans cette location -> 405 + Allow
 	if (allowMeth.find(method) == allowMeth.end())
 	{
 		response.addCode(405);
 		response.addHeadersResponse("Allow", buildAllowHeader(allowMeth));
+		fillDefaultErrorBody(response);
 		return response;
 	}
 
@@ -573,9 +588,11 @@ HttpResponse handleRequest(const HttpRequest &req, const ServerConfig &server)
 		response = Post(req, server);
 	else if (method == "DELETE")
 		response = Delete(req, server);
+	else
+		response.addCode(501);
 
-	// Si code erreur et pas de body/headers => body défaut
 	if (response.getCode() >= 400)
 		fillDefaultErrorBody(response);
+
 	return response;
 }

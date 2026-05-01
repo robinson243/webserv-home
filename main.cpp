@@ -1,10 +1,15 @@
-#include "LocationConfig.hpp"
 #include "RequestHandler.hpp"
-#include <iostream>
-#include <string>
-#include <vector>
+#include "LocationConfig.hpp"
+#include "ServerConfig.hpp"
+#include "HttpRequest.hpp"
+#include "HttpResponse.hpp"
 
-struct TestCase {
+#include <iostream>
+#include <vector>
+#include <string>
+
+struct TestCase
+{
     std::string name;
     std::string raw;
     int expected;
@@ -13,7 +18,8 @@ struct TestCase {
 static void addMethods(LocationConfig &loc,
                        const std::string &a,
                        const std::string &b = "",
-                       const std::string &c = "") {
+                       const std::string &c = "")
+{
     if (!a.empty())
         loc.addMethod(a);
     if (!b.empty())
@@ -22,120 +28,124 @@ static void addMethods(LocationConfig &loc,
         loc.addMethod(c);
 }
 
-static ServerConfig buildServer() {
+static ServerConfig buildServer()
+{
     ServerConfig server;
-    server.setRoot("./output/webserv_get_suite/www");
+    server.setRoot("./output/handle_request_suite/www");
     server.setIndex(std::vector<std::string>(1, "index.html"));
 
     LocationConfig root;
     root.setPath("/");
-    root.setRoot("./output/webserv_get_suite/www");
-    addMethods(root, "DELETE");
+    root.setRoot("./output/handle_request_suite/www");
+    addMethods(root, "GET", "DELETE");
 
-    LocationConfig deletezone;
-    deletezone.setPath("/deletezone");
-    deletezone.setRoot("./output/webserv_get_suite/www/deletezone");
-    addMethods(deletezone, "DELETE");
+    LocationConfig files;
+    files.setPath("/files");
+    files.setRoot("./output/handle_request_suite/www/files");
+    addMethods(files, "GET", "DELETE");
 
     LocationConfig upload;
     upload.setPath("/upload");
-    upload.setRoot("./output/webserv_get_suite/www/upload");
+    upload.setRoot("./output/handle_request_suite/www/upload");
     addMethods(upload, "GET", "POST");
 
-    LocationConfig dir;
-    dir.setPath("/dir");
-    dir.setRoot("./output/webserv_get_suite/www/dir");
-    addMethods(dir, "DELETE");
+    LocationConfig redir;
+    redir.setPath("/redir");
+    redir.setRoot("./output/handle_request_suite/www");
+    redir.setCode(301);
+    redir.setUrl("/files/hello.txt");
+    addMethods(redir, "GET");
 
     server.setLocations(root);
-    server.setLocations(deletezone);
+    server.setLocations(files);
     server.setLocations(upload);
-    server.setLocations(dir);
+    server.setLocations(redir);
+
     return server;
 }
 
-static void run(const TestCase &tc, const ServerConfig &server) {
+static void runTest(const TestCase &tc, const ServerConfig &server)
+{
     HttpRequest req;
     std::string raw = tc.raw;
     req.addHttpRequest(raw);
-    HttpResponse resp = Delete(req, server);
+
+    HttpResponse resp = handleRequest(req, server);
+
     std::cout << (resp.getCode() == tc.expected ? "[PASS] " : "[FAIL] ")
-              << tc.name << " (Expected " << tc.expected << ", Got "
-              << resp.getCode() << ")\n";
+              << tc.name
+              << " (Expected " << tc.expected
+              << ", Got " << resp.getCode() << ")"
+              << std::endl;
 }
 
-int main() {
+int main()
+{
     ServerConfig server = buildServer();
     std::vector<TestCase> tests;
 
     tests.push_back((TestCase){
-        "DELETE existing file",
-        "DELETE /deletezone/delete_me.txt HTTP/1.1\r\nHost: localhost\r\n\r\n",
-        204
-    });
+        "GET existing root file",
+        "GET /index.html HTTP/1.1\r\nHost: localhost\r\n\r\n",
+        200});
 
     tests.push_back((TestCase){
-        "DELETE second existing file",
-        "DELETE /deletezone/delete_me_2.txt HTTP/1.1\r\nHost: localhost\r\n\r\n",
-        204
-    });
+        "GET existing file in location",
+        "GET /files/hello.txt HTTP/1.1\r\nHost: localhost\r\n\r\n",
+        200});
+
+    tests.push_back((TestCase){
+        "GET missing file",
+        "GET /files/missing.txt HTTP/1.1\r\nHost: localhost\r\n\r\n",
+        404});
+
+    tests.push_back((TestCase){
+        "GET redirect",
+        "GET /redir HTTP/1.1\r\nHost: localhost\r\n\r\n",
+        301});
+
+    tests.push_back((TestCase){
+        "DELETE existing file",
+        "DELETE /files/delete_me.txt HTTP/1.1\r\nHost: localhost\r\n\r\n",
+        204});
 
     tests.push_back((TestCase){
         "DELETE missing file",
-        "DELETE /deletezone/missing.txt HTTP/1.1\r\nHost: localhost\r\n\r\n",
-        404
-    });
+        "DELETE /files/nope.txt HTTP/1.1\r\nHost: localhost\r\n\r\n",
+        404});
 
     tests.push_back((TestCase){
-        "DELETE directory at deletezone",
-        "DELETE /deletezone HTTP/1.1\r\nHost: localhost\r\n\r\n",
-        403
-    });
+        "DELETE directory forbidden",
+        "DELETE /files/subdir HTTP/1.1\r\nHost: localhost\r\n\r\n",
+        403});
 
     tests.push_back((TestCase){
-        "DELETE existing directory with slash",
-        "DELETE /dir/ HTTP/1.1\r\nHost: localhost\r\n\r\n",
-        403
-    });
+        "POST allowed in upload",
+        "POST /upload/new.txt HTTP/1.1\r\nHost: localhost\r\nContent-Length: 5\r\n\r\nhello",
+        201});
 
     tests.push_back((TestCase){
-        "DELETE traversal direct",
-        "DELETE /deletezone/../upload/file1.txt HTTP/1.1\r\nHost: localhost\r\n\r\n",
-        403
-    });
+        "POST not allowed in files",
+        "POST /files/hello.txt HTTP/1.1\r\nHost: localhost\r\nContent-Length: 5\r\n\r\nhello",
+        405});
 
     tests.push_back((TestCase){
-        "DELETE traversal nested",
-        "DELETE /deletezone/sub/../delete_me.txt HTTP/1.1\r\nHost: localhost\r\n\r\n",
-        403
-    });
+        "Unknown location",
+        "GET /ghost/file.txt HTTP/1.1\r\nHost: localhost\r\n\r\n",
+        404});
 
     tests.push_back((TestCase){
-        "DELETE unknown location",
-        "DELETE /ghost/file.txt HTTP/1.1\r\nHost: localhost\r\n\r\n",
-        404
-    });
+        "Malformed header",
+        "GET /index.html HTTP/1.1\r\nHost localhost\r\n\r\n",
+        400});
 
     tests.push_back((TestCase){
-        "DELETE empty uri",
-        "DELETE  HTTP/1.1\r\nHost: localhost\r\n\r\n",
-        400
-    });
-
-    tests.push_back((TestCase){
-        "DELETE uri only slash",
-        "DELETE / HTTP/1.1\r\nHost: localhost\r\n\r\n",
-        403
-    });
-
-    tests.push_back((TestCase){
-        "DELETE malformed header",
-        "DELETE /deletezone/delete_me.txt HTTP/1.1\r\nHost localhost\r\n\r\n",
-        400
-    });
+        "Unknown method",
+        "PUT /index.html HTTP/1.1\r\nHost: localhost\r\n\r\n",
+        501});
 
     for (size_t i = 0; i < tests.size(); ++i)
-        run(tests[i], server);
+        runTest(tests[i], server);
 
     return 0;
 }
