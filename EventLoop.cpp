@@ -6,7 +6,7 @@
 /*   By: oamairi <oamairi@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/04/30 18:32:40 by oamairi           #+#    #+#             */
-/*   Updated: 2026/05/02 13:40:48 by oamairi          ###   ########.fr       */
+/*   Updated: 2026/05/02 19:40:12 by oamairi          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -58,9 +58,7 @@ void	EventLoop::run()
 			{
 				if (isServerFd(_fds[i].fd) == true)
 				{
-					struct sockaddr_in clientAddr;
-					socklen_t clientLien = sizeof(clientAddr);
-					int clientFd = accept(_fds[i].fd, (struct sockaddr*) &clientAddr, &clientLien);
+					int clientFd = accept(_fds[i].fd, NULL, NULL);
 					if (clientFd == -1)
 					{
 						perror("accept error");
@@ -69,23 +67,32 @@ void	EventLoop::run()
 					int flags = fcntl(clientFd, F_GETFL, 0);
 					if (flags == -1)
 						(perror("fcntl(F_GETFL) error"), exit(1));
-					if (fcntl(clientFd, F_SETFL, flags | O_NONBLOCK) == -1)
+					if (fcntl(clientFd, F_SETFL, flags | O_NONBLOCK | FD_CLOEXEC) == -1)
 						(perror("fcntl(F_SETFL) error"), exit(1));
 					struct pollfd polfd;
 					polfd.fd = clientFd;
 					polfd.events = POLLIN;
 					polfd.revents = 0;
 					temp.push_back(polfd);
+					_buffers[clientFd] = "";
 				}
 				else
 				{
 					char buffer[4096];
 					int read = recv(_fds[i].fd, buffer, 4096, 0);
-					if (read == 0)
+					if (read <= 0)
 					{
+						if (read < 0)
+							perror("recv error");
 						close(_fds[i].fd);
+						_buffers.erase(_buffers.begin() + i);
 						_fds.erase(_fds.begin() + i);
 						i--;
+					}
+					else
+					{
+						_buffers[_fds[i].fd].append(buffer, read);
+						
 					}
 				}
 			}

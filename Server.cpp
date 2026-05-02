@@ -6,7 +6,7 @@
 /*   By: oamairi <oamairi@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/04/30 15:43:54 by oamairi           #+#    #+#             */
-/*   Updated: 2026/04/30 18:27:31 by oamairi          ###   ########.fr       */
+/*   Updated: 2026/05/02 19:15:44 by oamairi          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -32,6 +32,7 @@ void	Server::setup()
 	this->_fd = socket(AF_INET, SOCK_STREAM, 0);
 	if (this->_fd == -1)
 		(perror("socket error"), exit(1));
+	// Permet de rendre le socket non bloquant
 	int opt = 1;
 	if (setsockopt(_fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) == -1)
 		(perror("setsockopt error"), exit(1));
