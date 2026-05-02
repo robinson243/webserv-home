@@ -6,7 +6,7 @@
 /*   By: oamairi <oamairi@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/04/30 18:32:40 by oamairi           #+#    #+#             */
-/*   Updated: 2026/04/30 19:57:10 by oamairi          ###   ########.fr       */
+/*   Updated: 2026/05/02 13:40:48 by oamairi          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -76,6 +76,17 @@ void	EventLoop::run()
 					polfd.events = POLLIN;
 					polfd.revents = 0;
 					temp.push_back(polfd);
+				}
+				else
+				{
+					char buffer[4096];
+					int read = recv(_fds[i].fd, buffer, 4096, 0);
+					if (read == 0)
+					{
+						close(_fds[i].fd);
+						_fds.erase(_fds.begin() + i);
+						i--;
+					}
 				}
 			}
 		}
