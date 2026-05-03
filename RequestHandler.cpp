@@ -6,7 +6,7 @@
 /*   By: romukena <romukena@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/04/24 14:36:05 by romukena          #+#    #+#             */
-/*   Updated: 2026/05/03 23:35:58 by romukena         ###   ########.fr       */
+/*   Updated: 2026/05/04 00:40:00 by romukena         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -531,24 +531,29 @@ static void fillDefaultErrorBody(HttpResponse &resp)
 bool isCgiRequest(const HttpRequest &req, const LocationConfig &loc)
 {
 	std::string uri = req.getRequest().at("uri");
-	std::string queryString;
+	// std::string queryString;
 	std::string cgiFile;
-	std::string finalPath;
 	std::string ext;
 	size_t pos = uri.find("?");
 	if (pos == std::string::npos)
-		finalPath = uri;
+		cgiFile = uri;
 	else
+		cgiFile = uri.substr(0, pos);
+
+	size_t postExt = cgiFile.find_last_of(".");
+	if (postExt != std::string::npos)
 	{
-		cgiFile = uri.substr(0, pos - 1);
-		size_t postExt = cgiFile.find(".");
-		if (postExt != std::string::npos)
+		ext = cgiFile.substr(postExt);
+		std::map<std::string, std::string>::const_iterator it;
+		for (it = loc.getCgiExtension().begin(); it != loc.getCgiExtension().end(); ++it)
 		{
-			ext = cgiFile.substr(postExt);
+			if (it->first == ext)
+				return true;
 		}
-		if (uri[pos + 1])
-			queryString = uri.substr(pos + 1);
 	}
+	// if (uri[pos + 1])
+	// 	queryString = uri.substr(pos + 1);
+	return false;
 }
 
 // Politique choisie : si allow_methods est vide sur une location,
