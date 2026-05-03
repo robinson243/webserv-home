@@ -6,7 +6,7 @@
 /*   By: oamairi <oamairi@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/04/30 18:32:24 by oamairi           #+#    #+#             */
-/*   Updated: 2026/05/02 14:24:55 by oamairi          ###   ########.fr       */
+/*   Updated: 2026/05/03 23:43:32 by oamairi          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -17,6 +17,7 @@
 #include <poll.h>
 #include <sys/socket.h>
 #include <unistd.h>
+#include <sstream>
 
 class EventLoop
 {

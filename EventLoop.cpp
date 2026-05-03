@@ -6,7 +6,7 @@
 /*   By: oamairi <oamairi@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/04/30 18:32:40 by oamairi           #+#    #+#             */
-/*   Updated: 2026/05/02 19:40:12 by oamairi          ###   ########.fr       */
+/*   Updated: 2026/05/03 23:47:30 by oamairi          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -92,7 +92,17 @@ void	EventLoop::run()
 					else
 					{
 						_buffers[_fds[i].fd].append(buffer, read);
-						
+						if (_buffers[_fds[i].fd].find("\r\n\r\n") != std::string::npos)
+						{
+							std::string line;
+							while (std::getline((std::stringstream) _buffers[_fds[i].fd], line))
+							{
+								if (line.find("Content-Length: ") != std::string::npos)
+								{
+									line.
+								}
+							}
+						}
 					}
 				}
 			}
