@@ -6,13 +6,14 @@
 /*   By: ydembele <ydembele@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/04/14 13:44:36 by romukena          #+#    #+#             */
-/*   Updated: 2026/04/21 17:58:11 by ydembele         ###   ########.fr       */
+/*   Updated: 2026/05/01 15:50:00 by ydembele         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "LocationConfig.hpp"
+#include <cstdlib>
 #include <limits>
-#include <array>
+#include <cstdlib>
 
 LocationConfig::LocationConfig()
 	: _autoindex(false), _has_autoindex(false), _max_body(std::numeric_limits<std::size_t>::max()),
@@ -85,7 +86,6 @@ LocationConfig parseLocation(std::vector<Token>::iterator &it, std::vector<Token
 
 void	parseReturn(std::vector<Token>::iterator &it, std::vector<Token>::iterator end, LocationConfig &location)
 {
-	int code;
 	std::string path;
 
 	if (location.hasRedirect())
@@ -93,9 +93,13 @@ void	parseReturn(std::vector<Token>::iterator &it, std::vector<Token>::iterator 
 	++it;
 	if (it == end)
 		throw std::runtime_error("Return: missing value");
-	code = std::stoi(it->value);
+	char *d;
+	long code = std::strtol(it->value.c_str(), &d, 10);
+
+	if (*d != '\0')
+    	throw std::runtime_error("Return: not a valid integer");
 	if (code < 100 || code > 599)
-		throw std::runtime_error("Return: invalid value");
+    	throw std::runtime_error("Return: invalid value");
 	++it;
 	if (it == end)
 		throw std::runtime_error("Return: missing value");
@@ -197,7 +201,7 @@ void	parseAllowMethods(std::vector<Token>::iterator &it, std::vector<Token>::ite
 		throw std::runtime_error("allow_methods: unterminated directive");
 	if (allowmethod.empty())
 		throw std::runtime_error("allow_methods: no names provided");
-	++it; // Skip ;
+	++it;
 	location.setAllowMethods(allowmethod);
 }
 
@@ -323,9 +327,11 @@ void LocationConfig::sethasmaxsize(bool v)
 
 void LocationConfig::setCode(int v) {
 	_return_code = v;
+	_has_return = true;
 }
 void LocationConfig::setUrl(const std::string &v) {
 	_return_url = v;
+	_has_return = true;
 }
 void LocationConfig::setRoot(const std::string &v) {
 	_root = v;
@@ -392,7 +398,7 @@ std::ostream &operator<<(std::ostream &os, const LocationConfig &loc)
 		os << "return url: " << loc.getUrl() << "\n";
 	}
 
-	// if (!loc.getRoot().empty())
+	if (!loc.getRoot().empty())
 		os << "root: " << loc.getRoot() << "\n";
 
 	if (!loc.getPath().empty())
