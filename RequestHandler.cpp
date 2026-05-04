@@ -520,8 +520,10 @@ HttpResponse handleCgi(const HttpRequest &req,
 	else
 		SCRIPT_NAME = uri.substr(0, pos);
 	std::string QUERY_STRING;
-	if (uri[pos + 1])
+	if (pos != std::string::npos)
 		QUERY_STRING = uri.substr(pos + 1);
+	else
+		QUERY_STRING = "";
 	std::ostringstream s;
 	s << req.getBody().size();
 	std::string CONTENT_LENGTH = s.str();
@@ -537,9 +539,9 @@ HttpResponse handleCgi(const HttpRequest &req,
 		strcpy(envp[i], envpVec[i].c_str());
 	}
 	envp[envpVec.size()] = NULL;
-	for (size_t i = 0; i < envpVec.size(); ++i)
-		delete[] envp[i];
-	delete[] envp;
+	// for (size_t i = 0; i < envpVec.size(); ++i)
+	// 	delete[] envp[i];
+	// delete[] envp;
 }
 
 // Politique choisie : si allow_methods est vide sur une location,
