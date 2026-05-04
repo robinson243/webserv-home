@@ -12,9 +12,9 @@
 
 #pragma once
 
-#include "ServerConfig.hpp"
 #include "HttpRequest.hpp"
 #include "HttpResponse.hpp"
+#include "ServerConfig.hpp"
 
 int findLocation(ServerConfig server, HttpRequest req);
 std::string concatenatePath(ServerConfig server, HttpRequest req);
@@ -24,4 +24,7 @@ HttpResponse Get(const HttpRequest &req, const ServerConfig &server);
 HttpResponse Delete(const HttpRequest &req, const ServerConfig &server);
 HttpResponse Post(const HttpRequest &req, const ServerConfig &server);
 HttpResponse handleRequest(const HttpRequest &req, const ServerConfig &server);
-bool isCgiRequest(const HttpRequest& req, const LocationConfig& loc);
+bool isCgiRequest(const HttpRequest &req, const LocationConfig &loc);
+HttpResponse handleCgi(const HttpRequest &req,
+					   const LocationConfig &loc,
+					   const std::string &ext);
