@@ -571,10 +571,17 @@ HttpResponse handleCgi(const HttpRequest &req,
 		/* Error*/
 	}
 	pid = fork();
-	dup2(pipefd[1], 1);
-	close(pipefd[0]);
-	close(pipefd[1]);
-
+	if (pid == 0) {
+		dup2(pipefd[1], 1);
+		close(pipefd[0]);
+		close(pipefd[1]);
+		execve(scriptPath.c_str(), argv, envp);
+		exit;
+	} else {
+		close(pipefd[0]);
+		close(pipefd[1]);
+		/**/
+	}
 	// for (size_t i = 0; i < envpVec.size(); ++i)
 	// 	delete[] envp[i];
 	// delete[] envp;
