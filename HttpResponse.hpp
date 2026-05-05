@@ -6,7 +6,7 @@
 /*   By: romukena <romukena@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/04/14 15:48:13 by romukena          #+#    #+#             */
-/*   Updated: 2026/04/25 13:06:34 by romukena         ###   ########.fr       */
+/*   Updated: 2026/05/06 01:43:42 by romukena         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -23,15 +23,16 @@ Content-Length: 42\r\n       |
 <html>...</html>             ← body
 */
 
-class HttpResponse {
-  private:
+class HttpResponse
+{
+private:
 	int _code;
 	std::string _version;
 	std::string _message;
 	std::vector<unsigned char> _body;
 	std::map<std::string, std::string> _headers;
 
-  public:
+public:
 	HttpResponse();
 	~HttpResponse();
 	int getCode() const;
@@ -45,5 +46,6 @@ class HttpResponse {
 	void addMessage(std::string &e);
 	void addBodyResponse(std::string &e);
 	void addHeadersResponse(const std::string &key, const std::string &e);
+	void setBody(const std::vector<unsigned char> &body);
 	std::string serialize();
 };
