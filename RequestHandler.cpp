@@ -6,7 +6,7 @@
 /*   By: romukena <romukena@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/04/24 14:36:05 by romukena          #+#    #+#             */
-/*   Updated: 2026/05/06 01:44:31 by romukena         ###   ########.fr       */
+/*   Updated: 2026/05/07 00:01:44 by romukena         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -590,6 +590,83 @@ bool isCgiRequest(const HttpRequest &req, const LocationConfig &loc)
 	return false;
 }
 
+static HttpResponse parseCgiOutput(const std::vector<unsigned char> &output)
+{
+	// Convertir en string pour trouver la séparation headers/body
+	std::string raw(output.begin(), output.end());
+
+	// Chercher la ligne vide qui sépare headers et body
+	std::string sep = "\r\n\r\n";
+	size_t sepPos = raw.find(sep);
+
+	// fallback si le CGI utilise \n\n au lieu de \r\n\r\n
+	if (sepPos == std::string::npos)
+	{
+		sep = "\n\n";
+		sepPos = raw.find(sep);
+	}
+
+	if (sepPos == std::string::npos)
+		return makeErrorResponse(502); // pas de séparateur -> réponse CGI invalide
+
+	std::string headerSection = raw.substr(0, sepPos);
+	std::string bodySection = raw.substr(sepPos + sep.size());
+
+	// Parser les headers CGI ligne par ligne
+	HttpResponse r;
+	int code = 200;
+	std::string line;
+	std::istringstream stream(headerSection);
+
+	while (std::getline(stream, line))
+	{
+		// Supprimer le \r si présent
+		if (!line.empty() && line[line.size() - 1] == '\r')
+			line.erase(line.size() - 1);
+		if (line.empty())
+			continue;
+
+		size_t colon = line.find(':');
+		if (colon == std::string::npos)
+			continue;
+
+		std::string key = line.substr(0, colon);
+		std::string value = line.substr(colon + 2); // skip ": "
+
+		// Header spécial CGI : Status -> code HTTP
+		if (key == "Status")
+		{
+			// "Status: 200 OK" -> extraire 200
+			std::istringstream ss(value);
+			ss >> code;
+		}
+		else
+		{
+			r.addHeadersResponse(key, value);
+		}
+	}
+
+	// Construire le body
+	std::vector<unsigned char> bodyVec(bodySection.begin(), bodySection.end());
+
+	// Content-Length
+	std::ostringstream oss;
+	oss << bodyVec.size();
+	r.addHeadersResponse("Content-Length", oss.str());
+
+	r.addCode(code);
+	r.setBody(bodyVec);
+
+	return r;
+}
+
+static void freeEnvp(char **envp, size_t size)
+{
+	for (size_t i = 0; i < size; ++i)
+		delete[] envp[i];
+	delete[] envp;
+}
+
 HttpResponse handleCgi(const HttpRequest &req,
 					   const LocationConfig &loc,
 					   const std::string &ext)
@@ -616,7 +693,7 @@ HttpResponse handleCgi(const HttpRequest &req,
 	std::vector<std::string> envpVec;
 	envpVec.push_back("REQUEST_METHOD=" + REQUEST_METHOD);
 	envpVec.push_back("QUERY_STRING=" + QUERY_STRING);
-	envpVec.push_back("CONTENT_LENGTH=" + std::to_string(req.getBody().size()));
+	envpVec.push_back("CONTENT_LENGTH=" + CONTENT_LENGTH);
 	envpVec.push_back("SCRIPT_NAME=" + SCRIPT_NAME);
 
 	if (!loc.getPath().empty())
@@ -640,6 +717,8 @@ HttpResponse handleCgi(const HttpRequest &req,
 			}
 		}
 	}
+	if (scriptPath.empty())
+		return makeErrorResponse(500);
 	char **envp = new char *[envpVec.size() + 1];
 	for (size_t i = 0; i < envpVec.size(); ++i)
 	{
@@ -649,20 +728,20 @@ HttpResponse handleCgi(const HttpRequest &req,
 	envp[envpVec.size()] = NULL;
 
 	char *argv[] = {(char *)interpretor.c_str(),
-					(char *)SCRIPT_NAME.c_str(),
+					(char *)scriptPath.c_str(),
 					NULL};
 	int pipefdIn[2];
 	int pipefdOut[2];
 	pid_t pid;
 
 	if (pipe(pipefdIn) == -1)
-		return makeErrorResponse(500);
+		return freeEnvp(envp, envpVec.size()), makeErrorResponse(500);
 
 	if (pipe(pipefdOut) == -1)
 	{
 		close(pipefdIn[0]);
 		close(pipefdIn[1]);
-		return makeErrorResponse(500);
+		return freeEnvp(envp, envpVec.size()), makeErrorResponse(500);
 	}
 
 	pid = fork();
@@ -672,7 +751,7 @@ HttpResponse handleCgi(const HttpRequest &req,
 		close(pipefdIn[1]);
 		close(pipefdOut[0]);
 		close(pipefdOut[1]);
-		return makeErrorResponse(500);
+		return freeEnvp(envp, envpVec.size()), makeErrorResponse(500);
 	}
 
 	if (pid == 0)
@@ -706,14 +785,65 @@ HttpResponse handleCgi(const HttpRequest &req,
 
 	close(pipefdIn[0]);
 	close(pipefdOut[1]);
+	/* Parent */
+	const std::string &method = req.getRequest().at("method");
+	if (method == "POST" && !req.getBody().empty())
+	{
+		const std::vector<unsigned char> &body = req.getBody();
+		ssize_t written = write(pipefdIn[1],
+								reinterpret_cast<const char *>(body.data()),
+								body.size());
+		if (written == -1)
+		{
+			close(pipefdIn[1]);
+			close(pipefdOut[0]);
+			kill(pid, SIGKILL);
+			waitpid(pid, NULL, 0);
+			return freeEnvp(envp, envpVec.size()), makeErrorResponse(500);
+		}
+	}
+	close(pipefdIn[1]);
 
-	// le parent continue ici
-	// pipefdIn[1]  -> écrire body CGI
-	// pipefdOut[0] -> lire sortie CGI
+	std::vector<unsigned char> cgiOutput;
+	char buf[4096];
+	ssize_t n;
+	time_t start = time(NULL);
+	const int CGI_TIMEOUT = 5;
 
-	// for (size_t i = 0; i < envpVec.size(); ++i)
-	// 	delete[] envp[i];
-	// delete[] envp;
+	while (true)
+	{
+		if (time(NULL) - start > CGI_TIMEOUT)
+		{
+			close(pipefdOut[0]);
+			kill(pid, SIGKILL);
+			waitpid(pid, NULL, 0);
+			return freeEnvp(envp, envpVec.size()), makeErrorResponse(504);
+		}
+
+		n = read(pipefdOut[0], buf, sizeof(buf));
+		if (n == -1)
+		{
+			close(pipefdOut[0]);
+			kill(pid, SIGKILL);
+			waitpid(pid, NULL, 0);
+			return freeEnvp(envp, envpVec.size()), makeErrorResponse(500);
+		}
+		if (n == 0)
+			break;
+		cgiOutput.insert(cgiOutput.end(), buf, buf + n);
+	}
+
+	close(pipefdOut[0]);
+
+	int status;
+	waitpid(pid, &status, 0);
+
+	freeEnvp(envp, envpVec.size());
+
+	if (WIFEXITED(status) && WEXITSTATUS(status) != 0)
+		return makeErrorResponse(502);
+
+	return parseCgiOutput(cgiOutput);
 }
 
 // Politique choisie : si allow_methods est vide sur une location,
@@ -769,6 +899,18 @@ HttpResponse handleRequest(const HttpRequest &req, const ServerConfig &server)
 		response.addHeadersResponse("Allow", buildAllowHeader(allowMeth));
 		fillDefaultErrorBody(response);
 		return response;
+	}
+
+	std::string uri = req.getRequest().at("uri");
+	size_t qpos = uri.find("?");
+	std::string path = (qpos == std::string::npos) ? uri : uri.substr(0, qpos);
+	size_t dotpos = path.rfind(".");
+	if (dotpos != std::string::npos)
+	{
+		std::string ext = path.substr(dotpos);
+		const std::map<std::string, std::string> &cgiExt = loc.getCgiExtension();
+		if (cgiExt.find(ext) != cgiExt.end())
+			return handleCgi(req, loc, ext);
 	}
 
 	if (method == "GET")
