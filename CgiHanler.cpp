@@ -65,7 +65,11 @@ HttpResponse parseCgiOutput(const std::vector<unsigned char> &output) {
 			continue;
 
 		std::string key = line.substr(0, colon);
-		std::string value = line.substr(colon + 2); // skip ": "
+		std::string value = line.substr(colon + 2);
+		if (colon + 1 < line.size())
+			value = line.substr(colon + 1);
+		if (!value.empty() && value[0] == ' ')
+			value = value.substr(1);
 
 		// Header spécial CGI : Status -> code HTTP
 		if (key == "Status") {

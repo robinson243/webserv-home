@@ -11,8 +11,8 @@
 /* ************************************************************************** */
 
 #include "RequestHandler.hpp"
-#include "LocationConfig.hpp"
 #include "CgiHanler.hpp"
+#include "LocationConfig.hpp"
 #include <algorithm>
 #include <cstring>
 #include <dirent.h>
@@ -494,8 +494,12 @@ HttpResponse Post(const HttpRequest &req, const ServerConfig &server) {
 	}
 
 	file.write(reinterpret_cast<const char *>(&body[0]), body.size());
+	if (file.fail()) {
+		file.close();
+		response.addCode(500);
+		return response;
+	}
 	file.close();
-
 	response.addCode(201);
 	return response;
 }
