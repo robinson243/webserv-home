@@ -139,7 +139,11 @@ std::string concatenatePath(ServerConfig server, HttpRequest req) {
 	finalPath = absRoot + uri;
 	char *resolvedPath = realpath(finalPath.c_str(), NULL);
 	if (!resolvedPath) {
-		if (finalPath.find(absRoot) != 0)
+		// Fichier inexistant : vérification manuelle
+		if (finalPath.compare(0, absRoot.size(), absRoot) != 0)
+			return "";
+		if (finalPath.find("/../") != std::string::npos
+			|| finalPath.find("/..") == finalPath.size() - 3)
 			return "";
 		return finalPath;
 	}
