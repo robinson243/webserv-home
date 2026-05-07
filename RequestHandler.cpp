@@ -195,7 +195,7 @@ HttpResponse Get(const HttpRequest &req, const ServerConfig &server) {
 	struct stat st;
 	HttpResponse response;
 	int valLocation = findLocation(server, req);
-	int locIndex = findLocation(server, req);
+	int locIndex = valLocation;
 	std::vector<LocationConfig> locations = server.getLocations();
 
 	if (locations.empty() || locIndex == -1) {
@@ -473,7 +473,11 @@ HttpResponse Post(const HttpRequest &req, const ServerConfig &server) {
 	else
 		filename = uri.substr(p + 1);
 
-	if (filename.empty() || filename.find("..") != std::string::npos) {
+	if (filename.empty()) {
+		response.addCode(400);
+		return response;
+	}
+	if (filename.find("..") != std::string::npos) {
 		response.addCode(403);
 		return response;
 	}
