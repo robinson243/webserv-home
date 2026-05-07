@@ -6,7 +6,7 @@
 /*   By: oamairi <oamairi@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/04/30 18:32:24 by oamairi           #+#    #+#             */
-/*   Updated: 2026/05/03 23:43:32 by oamairi          ###   ########.fr       */
+/*   Updated: 2026/05/07 17:06:48 by oamairi          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -18,13 +18,16 @@
 #include <sys/socket.h>
 #include <unistd.h>
 #include <sstream>
+#include "HttpRequest.hpp"
+#include "RequestHandler.hpp"
 
 class EventLoop
 {
 private:
-	std::vector<pollfd>			_fds;
-	std::vector<Server>			_servers;
-	std::map<int, std::string>	_buffers;
+	std::vector<pollfd>				_fds;
+	std::vector<Server>				_servers;
+	std::map<int, std::string>		_buffers;
+	const std::vector<ServerConfig>	_configs;
 public:
 	EventLoop(const std::vector<ServerConfig> &configs);
 	void	run();

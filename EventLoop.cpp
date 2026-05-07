@@ -6,7 +6,7 @@
 /*   By: oamairi <oamairi@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/04/30 18:32:40 by oamairi           #+#    #+#             */
-/*   Updated: 2026/05/03 23:47:30 by oamairi          ###   ########.fr       */
+/*   Updated: 2026/05/07 17:16:02 by oamairi          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -29,6 +29,7 @@ EventLoop::EventLoop(const std::vector<ServerConfig> &configs)
 			_fds.push_back(polfd);
 		}
 	}
+	_configs = configs;
 }
 
 bool	EventLoop::isServerFd(int fd)
@@ -85,7 +86,7 @@ void	EventLoop::run()
 						if (read < 0)
 							perror("recv error");
 						close(_fds[i].fd);
-						_buffers.erase(_buffers.begin() + i);
+						_buffers.erase(_fds[i].fd);
 						_fds.erase(_fds.begin() + i);
 						i--;
 					}
@@ -94,14 +95,31 @@ void	EventLoop::run()
 						_buffers[_fds[i].fd].append(buffer, read);
 						if (_buffers[_fds[i].fd].find("\r\n\r\n") != std::string::npos)
 						{
-							std::string line;
-							while (std::getline((std::stringstream) _buffers[_fds[i].fd], line))
+							if (_buffers[_fds[i].fd].find("Content-Length: ") != std::string::npos)
 							{
-								if (line.find("Content-Length: ") != std::string::npos)
-								{
-									line.
-								}
+								int ligneContentLength = _buffers[_fds[i].fd].find("Content-Length: ");
+								int contentLength = std::stoi(_buffers[_fds[i].fd].substr(ligneContentLength + 16));
+								std::string body = _buffers[_fds[i].fd].substr(_buffers[_fds[i].fd].find("\r\n\r\n") + 4);
+								if (contentLength > 0 && body.size() < contentLength)
+									continue;
 							}
+							HttpRequest request;
+							request.addHttpRequest(_buffers[_fds[i].fd]);
+							_buffers[_fds[i].fd].clear();
+							
+							for (size_t i = 0; i < _servers.size(); i++)
+							{
+								for (size_t j = 0; j < _configs[i].getPort().size(); j++)
+								{
+									if (_servers[i].getPort() == _configs[i].getPort()[j])
+									{
+										
+										handleRequest(request, _configs[i]);
+									}
+								}
+								
+							}
+							
 						}
 					}
 				}
