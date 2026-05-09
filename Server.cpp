@@ -6,13 +6,13 @@
 /*   By: oamairi <oamairi@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/04/30 15:43:54 by oamairi           #+#    #+#             */
-/*   Updated: 2026/05/02 19:15:44 by oamairi          ###   ########.fr       */
+/*   Updated: 2026/05/09 14:53:53 by oamairi          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "Server.hpp"
 
-Server::Server(int port) : _port(port), _fd(-1)
+Server::Server(int port) : _fd(-1), _port(port)
 {
 	bzero(&this->_addr, sizeof(this->_addr));
 }

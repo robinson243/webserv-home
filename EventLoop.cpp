@@ -6,7 +6,7 @@
 /*   By: oamairi <oamairi@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/04/30 18:32:40 by oamairi           #+#    #+#             */
-/*   Updated: 2026/05/09 13:06:42 by oamairi          ###   ########.fr       */
+/*   Updated: 2026/05/09 14:51:57 by oamairi          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -100,7 +100,7 @@ void	EventLoop::run()
 							if (_buffers[_fds[i].fd].find("Content-Length: ") != std::string::npos)
 							{
 								int ligneContentLength = _buffers[_fds[i].fd].find("Content-Length: ");
-								int contentLength = std::stoi(_buffers[_fds[i].fd].substr(ligneContentLength + 16));
+								size_t contentLength = std::atoi(_buffers[_fds[i].fd].substr(ligneContentLength + 16).c_str());
 								std::string body = _buffers[_fds[i].fd].substr(_buffers[_fds[i].fd].find("\r\n\r\n") + 4);
 								if (contentLength > 0 && body.size() < contentLength)
 									continue;

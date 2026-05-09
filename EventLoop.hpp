@@ -6,18 +6,19 @@
 /*   By: oamairi <oamairi@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/04/30 18:32:24 by oamairi           #+#    #+#             */
-/*   Updated: 2026/05/09 13:02:01 by oamairi          ###   ########.fr       */
+/*   Updated: 2026/05/09 14:50:30 by oamairi          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #pragma once
-#include "Server.hpp"
 #include <vector>
-#include <fstream>
 #include <poll.h>
-#include <sys/socket.h>
-#include <unistd.h>
 #include <sstream>
+#include <cstdlib>
+#include <fstream>
+#include <unistd.h>
+#include "Server.hpp"
+#include <sys/socket.h>
 #include "HttpRequest.hpp"
 #include "RequestHandler.hpp"
 

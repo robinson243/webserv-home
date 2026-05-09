@@ -6,16 +6,18 @@
 /*   By: oamairi <oamairi@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/04/30 15:33:47 by oamairi           #+#    #+#             */
-/*   Updated: 2026/04/30 17:50:08 by oamairi          ###   ########.fr       */
+/*   Updated: 2026/05/09 14:53:28 by oamairi          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #pragma once
 
-#include "ServerConfig.hpp"
+#include <cstdio>
 #include <cstring>
-#include <netinet/in.h>
+#include <cstdlib>
 #include <fcntl.h>
+#include <netinet/in.h>
+#include "ServerConfig.hpp"
 
 class Server
 {
