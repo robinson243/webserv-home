@@ -527,11 +527,38 @@ void fillDefaultErrorBody(HttpResponse &resp) {
 	resp.addBodyResponse(body);
 }
 
+ServerConfig selectServer(const std::vector<ServerConfig> &servers,
+						  const HttpRequest &req) {
+	std::map<std::string, std::string> headers = req.getHeaders();
+	std::map<std::string, std::string>::const_iterator it =
+		headers.find("Host");
+
+	if (it == headers.end())
+		return servers[0];
+
+	std::string host = it->second;
+	size_t pos = host.find(':');
+	if (pos != std::string::npos)
+		host = host.substr(0, pos);
+
+	for (std::vector<ServerConfig>::const_iterator sit = servers.begin();
+		 sit != servers.end();
+		 ++sit) {
+		std::vector<std::string> names = sit->getServerName();
+		for (size_t i = 0; i < names.size(); i++) {
+			if (names[i] == host)
+				return (*sit);
+		}
+	}
+	return servers[0];
+}
+
 // Politique choisie : si allow_methods est vide sur une location,
 // on autorise par défaut les 3 méthodes mandatory : GET, POST, DELETE.
-HttpResponse handleRequest(const HttpRequest &req, const ServerConfig &server) {
+HttpResponse handleRequest(const HttpRequest &req,
+						   const std::vector<ServerConfig> &servers) {
 	HttpResponse response;
-
+	ServerConfig server = selectServer(servers, req);
 	if (!req.getValid()) {
 		response.addCode(req.getCode());
 		fillDefaultErrorBody(response);
