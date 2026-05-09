@@ -40,17 +40,6 @@ struct ListenSocket
     std::vector<ServerConfig*> servers;
 };
 
-struct Token
-{
-	std::string value;
-	bool in_quotes;
-
-	Token() : value(""), in_quotes(false) {}
-
-	Token(const std::string &v) : value(v), in_quotes(false) {}
-
-	Token(const std::string &v, bool q) : value(v), in_quotes(q) {}
-};
 
 class LocationConfig;
 
