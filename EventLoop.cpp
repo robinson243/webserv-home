@@ -6,13 +6,13 @@
 /*   By: oamairi <oamairi@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/04/30 18:32:40 by oamairi           #+#    #+#             */
-/*   Updated: 2026/05/09 15:49:26 by oamairi          ###   ########.fr       */
+/*   Updated: 2026/05/09 17:16:14 by oamairi          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "EventLoop.hpp"
 
-EventLoop::EventLoop(const std::vector<ServerConfig> &configs)
+EventLoop::EventLoop(const std::vector<ServerConfig> &configs) : _run(true)
 {
 	for (size_t i = 0; i < configs.size(); i++)
 	{
@@ -54,7 +54,7 @@ bool	EventLoop::isServerFd(int fd)
 
 void	EventLoop::run()
 {
-	while (true)
+	while (_run)
 	{
 		if (poll(_fds.data(), _fds.size(), -1) == -1)
 			(perror("poll error"), exit(1));
@@ -132,6 +132,11 @@ void	EventLoop::run()
 			_fds.push_back(temp[i]);
 		}
 	}
+}
+
+void	EventLoop::stop()
+{
+	_run = false;
 }
 
 EventLoop::~EventLoop() {};

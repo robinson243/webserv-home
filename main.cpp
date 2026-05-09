@@ -150,6 +150,8 @@ int main()
     return 0;
 }*/
 
+#include <csignal>
+#include <iostream>
 #include "Server.hpp"
 #include "EventLoop.hpp"
 #include "CgiHandler.hpp"
@@ -157,7 +159,16 @@ int main()
 #include "HttpResponse.hpp"
 #include "ServerConfig.hpp"
 #include "LocationConfig.hpp"
-#include <iostream>
+
+static EventLoop *g_eventloop = NULL;
+
+static void signalHandler(int sig)
+{
+	(void)sig;
+	if (g_eventloop)
+		g_eventloop->stop();
+}
+
 
 int main(int argc, char **argv)
 {
@@ -170,6 +181,8 @@ int main(int argc, char **argv)
 	conf.append(argv[1]);
 	std::vector<ServerConfig> serverconfig = pars(conf);
 	EventLoop server(serverconfig);
+	signal(SIGINT, signalHandler);
 	server.run();
+	delete g_eventloop;
 	return (0);
 }
