@@ -152,7 +152,7 @@ int main()
 
 #include "Server.hpp"
 #include "EventLoop.hpp"
-#include "CgiHanler.hpp"
+#include "CgiHandler.hpp"
 #include "HttpRequest.hpp"
 #include "HttpResponse.hpp"
 #include "ServerConfig.hpp"
