@@ -33,5 +33,6 @@ public:
 	EventLoop(const std::vector<ServerConfig> &configs);
 	void	run();
 	bool	isServerFd(int fd);
+	EventLoop();
 	~EventLoop();
 };

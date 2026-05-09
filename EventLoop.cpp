@@ -123,5 +123,6 @@ void	EventLoop::run()
 		}
 	}
 }
+EventLoop::EventLoop() {};
 
 EventLoop::~EventLoop() {};
