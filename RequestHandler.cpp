@@ -508,7 +508,7 @@ HttpResponse Post(const HttpRequest &req, const ServerConfig &server) {
 		return response;
 	}
 	file.close();
-	response.addCode(201);
+	response = makeRedirectResponse(201, uri);
 	return response;
 }
 
