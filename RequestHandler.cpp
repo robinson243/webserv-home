@@ -22,11 +22,11 @@
 #include <sstream>
 #include <string>
 
-static bool isImplementedMethod(const std::string &m) {
+bool isImplementedMethod(const std::string &m) {
 	return (m == "GET" || m == "POST" || m == "DELETE");
 }
 
-static std::string buildAllowHeader(const std::set<std::string> &allow) {
+std::string buildAllowHeader(const std::set<std::string> &allow) {
 	// Format: "GET, POST, DELETE"
 	std::string out;
 	for (std::set<std::string>::const_iterator it = allow.begin();
@@ -39,7 +39,7 @@ static std::string buildAllowHeader(const std::set<std::string> &allow) {
 	return out;
 }
 
-static HttpResponse makeRedirectResponse(int code, const std::string &url) {
+HttpResponse makeRedirectResponse(int code, const std::string &url) {
 	HttpResponse r;
 	r.addCode(code);
 	r.addHeadersResponse("Location", url);
@@ -47,7 +47,7 @@ static HttpResponse makeRedirectResponse(int code, const std::string &url) {
 	return r;
 }
 
-static HttpResponse makeErrorResponse(int code) {
+HttpResponse makeErrorResponse(int code) {
 	HttpResponse r;
 	std::string body;
 
@@ -81,7 +81,7 @@ static HttpResponse makeErrorResponse(int code) {
 
 // Choix "sujet-friendly": si allow_methods est vide, on autorise au moins
 // GET/POST/DELETE.
-static std::set<std::string>
+std::set<std::string>
 defaultAllowedMethodsIfEmpty(std::set<std::string> allow) {
 	if (!allow.empty())
 		return allow;
@@ -324,8 +324,8 @@ HttpResponse Get(const HttpRequest &req, const ServerConfig &server) {
 	response.addCode(404);
 	return response;
 }
-static std::string concatenateLocationPath(const LocationConfig &loc,
-										   const HttpRequest &req) {
+std::string concatenateLocationPath(const LocationConfig &loc,
+									const HttpRequest &req) {
 	std::string uri = req.getRequest().at("uri");
 
 	size_t q = uri.find('?');
@@ -512,7 +512,7 @@ HttpResponse Post(const HttpRequest &req, const ServerConfig &server) {
 	return response;
 }
 
-static void fillDefaultErrorBody(HttpResponse &resp) {
+void fillDefaultErrorBody(HttpResponse &resp) {
 	int code = resp.getCode();
 	// Simple pages
 	std::ostringstream html;

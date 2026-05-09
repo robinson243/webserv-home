@@ -3,7 +3,7 @@ CFLAGS = -Wall -Wextra -Werror -O3 -std=c++98 -g
 
 NAME = webserv
 
-SRC = CgiHanler.cpp  HttpRequest.cpp  HttpResponse.cpp  LocationConfig.cpp  main.cpp  RequestHandler.cpp  ServerConfig.cpp
+SRC = CgiHandler.cpp  HttpRequest.cpp  HttpResponse.cpp  LocationConfig.cpp  main.cpp  RequestHandler.cpp  ServerConfig.cpp
 OBJ = $(SRC:.cpp=.o)
 
 all: $(NAME)
