@@ -11,7 +11,7 @@
 /* ************************************************************************** */
 
 #include "RequestHandler.hpp"
-#include "CgiHanler.hpp"
+#include "CgiHandler.hpp"
 #include "LocationConfig.hpp"
 #include <algorithm>
 #include <cstring>
