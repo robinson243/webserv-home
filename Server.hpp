@@ -6,7 +6,7 @@
 /*   By: oamairi <oamairi@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/04/30 15:33:47 by oamairi           #+#    #+#             */
-/*   Updated: 2026/05/09 14:53:28 by oamairi          ###   ########.fr       */
+/*   Updated: 2026/05/09 16:12:11 by oamairi          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -27,8 +27,8 @@ private:
 	struct sockaddr_in	_addr;
 public:
 	Server(int port);
-	void	setup();
-	int		getFd();
-	int		getPort();
+	void			setup();
+	int				getFd();
+	unsigned int	getPort();
 	~Server();
 };

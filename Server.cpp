@@ -6,7 +6,7 @@
 /*   By: oamairi <oamairi@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/04/30 15:43:54 by oamairi           #+#    #+#             */
-/*   Updated: 2026/05/09 14:53:53 by oamairi          ###   ########.fr       */
+/*   Updated: 2026/05/09 16:12:22 by oamairi          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -22,7 +22,7 @@ int	Server::getFd()
 	return this->_fd;
 }
 
-int	Server::getPort()
+unsigned int	Server::getPort()
 {
 	return this->_port;
 }

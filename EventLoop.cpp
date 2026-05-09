@@ -6,7 +6,7 @@
 /*   By: oamairi <oamairi@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/04/30 18:32:40 by oamairi           #+#    #+#             */
-/*   Updated: 2026/05/09 14:51:57 by oamairi          ###   ########.fr       */
+/*   Updated: 2026/05/09 15:49:26 by oamairi          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -19,6 +19,16 @@ EventLoop::EventLoop(const std::vector<ServerConfig> &configs)
 		std::vector<unsigned int> ports = configs[i].getPort();
 		for (size_t j = 0; j < ports.size(); j++)
 		{
+			if (_bindedPorts.count(ports[j]))
+			{
+				for (size_t k = 0; k < _servers.size(); k++)
+				{
+					if (_servers[k].getPort() == ports[j])
+						_serverToConfig[_servers[k].getFd()].push_back(configs[i]);
+				}
+				continue;
+			}
+			_bindedPorts.insert(ports[j]);
 			Server server(ports[j]);
 			_servers.push_back(server);
 			_servers.back().setup();
@@ -27,7 +37,7 @@ EventLoop::EventLoop(const std::vector<ServerConfig> &configs)
 			polfd.events = POLLIN;
 			polfd.revents = 0;
 			_fds.push_back(polfd);
-			_serverToConfig[_servers.back().getFd()] = configs[i];
+			_serverToConfig[_servers.back().getFd()].push_back(configs[i]);
 		}
 	}
 }
@@ -123,6 +133,5 @@ void	EventLoop::run()
 		}
 	}
 }
-EventLoop::EventLoop() {};
 
 EventLoop::~EventLoop() {};
