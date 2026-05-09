@@ -6,7 +6,7 @@
 /*   By: oamairi <oamairi@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/04/30 18:32:40 by oamairi           #+#    #+#             */
-/*   Updated: 2026/05/07 17:16:02 by oamairi          ###   ########.fr       */
+/*   Updated: 2026/05/09 13:06:42 by oamairi          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -27,9 +27,9 @@ EventLoop::EventLoop(const std::vector<ServerConfig> &configs)
 			polfd.events = POLLIN;
 			polfd.revents = 0;
 			_fds.push_back(polfd);
+			_serverToConfig[_servers.back().getFd()] = configs[i];
 		}
 	}
-	_configs = configs;
 }
 
 bool	EventLoop::isServerFd(int fd)
@@ -76,6 +76,7 @@ void	EventLoop::run()
 					polfd.revents = 0;
 					temp.push_back(polfd);
 					_buffers[clientFd] = "";
+					_clientFdToConfig[clientFd] = _serverToConfig[_fds[i].fd];
 				}
 				else
 				{
@@ -87,6 +88,7 @@ void	EventLoop::run()
 							perror("recv error");
 						close(_fds[i].fd);
 						_buffers.erase(_fds[i].fd);
+						_clientFdToConfig.erase(_fds[i].fd);
 						_fds.erase(_fds.begin() + i);
 						i--;
 					}
@@ -106,20 +108,10 @@ void	EventLoop::run()
 							HttpRequest request;
 							request.addHttpRequest(_buffers[_fds[i].fd]);
 							_buffers[_fds[i].fd].clear();
-							
-							for (size_t i = 0; i < _servers.size(); i++)
-							{
-								for (size_t j = 0; j < _configs[i].getPort().size(); j++)
-								{
-									if (_servers[i].getPort() == _configs[i].getPort()[j])
-									{
-										
-										handleRequest(request, _configs[i]);
-									}
-								}
-								
-							}
-							
+							HttpResponse response;
+							response = handleRequest(request, _clientFdToConfig[_fds[i].fd]);
+							std::string raw = response.serialize();
+							send(_fds[i].fd, raw.c_str(), raw.size(), 0);
 						}
 					}
 				}

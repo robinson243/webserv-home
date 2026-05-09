@@ -6,7 +6,7 @@
 /*   By: oamairi <oamairi@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/04/30 18:32:24 by oamairi           #+#    #+#             */
-/*   Updated: 2026/05/07 17:06:48 by oamairi          ###   ########.fr       */
+/*   Updated: 2026/05/09 13:02:01 by oamairi          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -27,7 +27,8 @@ private:
 	std::vector<pollfd>				_fds;
 	std::vector<Server>				_servers;
 	std::map<int, std::string>		_buffers;
-	const std::vector<ServerConfig>	_configs;
+	std::map<int, ServerConfig>		_serverToConfig;
+	std::map<int, ServerConfig>		_clientFdToConfig;
 public:
 	EventLoop(const std::vector<ServerConfig> &configs);
 	void	run();
