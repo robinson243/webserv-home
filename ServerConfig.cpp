@@ -6,7 +6,7 @@
 /*   By: ydembele <ydembele@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/04/16 13:40:39 by ydembele          #+#    #+#             */
-/*   Updated: 2026/05/01 15:51:06 by ydembele         ###   ########.fr       */
+/*   Updated: 2026/05/11 16:27:02 by ydembele         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -160,7 +160,6 @@ void parseDirective(std::vector<Token>::iterator &it, std::vector<Token>::iterat
 		i++;
 	if (i == 7)
 		throw std::runtime_error("Unknown directive: " + it->value);
-	std::cout << it->value << std::endl;
 	switch (i)
 	{
 		case 0:
