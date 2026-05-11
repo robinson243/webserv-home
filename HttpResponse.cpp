@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   HttpResponse.cpp                                   :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: ydembele <ydembele@student.42.fr>          +#+  +:+       +#+        */
+/*   By: romukena <romukena@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/04/16 14:09:04 by romukena          #+#    #+#             */
-/*   Updated: 2026/05/01 15:50:44 by ydembele         ###   ########.fr       */
+/*   Updated: 2026/05/06 01:43:21 by romukena         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -39,9 +39,45 @@ std::map<std::string, std::string> HttpResponse::getHeaders() const {
 	return _headers;
 }
 
+static std::string codeReturn(int code) {
+	std::string e;
+	if (code == 200)
+		e = "OK";
+	else if (code == 201)
+		e = "Created";
+	else if (code == 204)
+		e = "No Content";
+	else if (code == 301)
+		e = "Moved Permanently";
+	else if (code == 400)
+		e = "Bad Request";
+	else if (code == 403)
+		e = "Forbidden";
+	else if (code == 404)
+		e = "Not Found";
+	else if (code == 405)
+		e = "Method Not Allowed";
+	else if (code == 413)
+		e = "Payload Too Large";
+	else if (code == 500)
+		e = "Internal Server Error";
+	else if (code == 501)
+		e = "Not Implemented";
+	else if (code == 502)
+		e = "Bad Gateway";
+	else if (code == 504)
+		e = "Gateway Timeout";
+	else 
+		e = "Unknown";
+	return e;
+}
+
 void HttpResponse::addCode(int code) {
 	_code = code;
+	_version = "HTTP/1.1";
+	_message = codeReturn(code);
 }
+
 void HttpResponse::addVersion(std::string &e) {
 	_version = e;
 }
@@ -57,6 +93,10 @@ void HttpResponse::addBodyResponse(std::string &e) {
 void HttpResponse::addHeadersResponse(const std::string &key,
 									  const std::string &e) {
 	_headers.insert(std::pair<std::string, std::string>(key, e));
+}
+
+void HttpResponse::setBody(const std::vector<unsigned char> &body) {
+	_body = body;
 }
 
 std::string HttpResponse::serialize() {

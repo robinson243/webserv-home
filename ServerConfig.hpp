@@ -6,7 +6,7 @@
 /*   By: ydembele <ydembele@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/04/14 15:01:30 by romukena          #+#    #+#             */
-/*   Updated: 2026/05/01 15:58:04 by ydembele         ###   ########.fr       */
+/*   Updated: 2026/05/11 14:44:41 by ydembele         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -40,6 +40,9 @@ struct ListenSocket
     std::vector<ServerConfig*> servers;
 };
 
+
+class LocationConfig;
+
 struct Token
 {
 	std::string value;
@@ -52,7 +55,6 @@ struct Token
 	Token(const std::string &v, bool q) : value(v), in_quotes(q) {}
 };
 
-class LocationConfig;
 
 class ServerConfig {
 private:
