@@ -6,7 +6,7 @@
 /*   By: ydembele <ydembele@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/04/16 13:40:39 by ydembele          #+#    #+#             */
-/*   Updated: 2026/05/11 13:53:23 by ydembele         ###   ########.fr       */
+/*   Updated: 2026/05/11 15:28:24 by ydembele         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -46,20 +46,13 @@ ServerConfig &ServerConfig::operator=(const ServerConfig &other)
 
 ServerConfig::ServerConfig(const ServerConfig &other)
 {
-    _listenHost = other._listenHost;
-    _port = other._port;
-    _serverName = other._serverName;
-    _root = other._root;
-    _index = other._index;
-    _clientMaxBodySize = other._clientMaxBodySize;
-    _errorPage = other._errorPage;
-    _locations = other._locations;
-    _hasMaxSize = other._hasMaxSize;
-    _data = other._data;
+    *this = other;
 }
 
 ServerConfig::~ServerConfig()
-{}
+{
+	
+}
 
 
 std::vector<ServerConfig> pars(const std::string &file)

@@ -6,7 +6,7 @@
 /*   By: ydembele <ydembele@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/04/14 12:17:03 by romukena          #+#    #+#             */
-/*   Updated: 2026/05/01 15:50:31 by ydembele         ###   ########.fr       */
+/*   Updated: 2026/05/11 15:31:40 by ydembele         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -47,6 +47,8 @@
 
 // Faire les getters et les setters;
 // Faire le constructeur de defaut;
+
+struct Token;
 
 class LocationConfig {
   private:

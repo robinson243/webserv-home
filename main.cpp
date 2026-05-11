@@ -168,8 +168,17 @@ int main(int argc, char **argv)
 		return (1);
 	}
 	conf.append(argv[1]);
-	std::vector<ServerConfig> serverconfig = pars(conf);
-	EventLoop server(serverconfig);
-	server.run();
-	return (0);
+	std::vector<ServerConfig> serverconfig;
+    try
+    {
+        serverconfig = pars(conf);
+        EventLoop server(serverconfig);
+        server.run();
+        return (0);
+    }
+    catch(const std::exception& e)
+    {
+        std::cerr << e.what() << '\n';
+        return (1);
+    }
 }

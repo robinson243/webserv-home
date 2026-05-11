@@ -6,7 +6,7 @@
 /*   By: ydembele <ydembele@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/04/14 15:01:30 by romukena          #+#    #+#             */
-/*   Updated: 2026/05/11 14:44:41 by ydembele         ###   ########.fr       */
+/*   Updated: 2026/05/11 15:33:17 by ydembele         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -26,22 +26,11 @@
 #include <netinet/ip.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
+#include "LocationConfig.hpp"
 
-class LocationConfig;
-class ServerConfig;
+// class ServerConfig;
+// class LocationConfig;
 
-struct ListenSocket
-{
-    std::string host;
-    unsigned int port;
-    int fd;
-    sockaddr_in addr;
-
-    std::vector<ServerConfig*> servers;
-};
-
-
-class LocationConfig;
 
 struct Token
 {
@@ -116,7 +105,6 @@ void validateServer(ServerConfig &server);
 std::map<int, std::vector<ServerConfig*> > groupServersByPort(const std::vector<ServerConfig> &servers);
 ServerConfig *selectServer(int port, std::string host, std::vector<ServerConfig> &servers);
 LocationConfig selectLocation(std::string uri, ServerConfig &servers);
-std::vector<ListenSocket> buildListenSockets(std::vector<ServerConfig> &servers);
 
 
 bool operator==(const Token &t, const std::string &s);
