@@ -262,6 +262,5 @@ HttpResponse handleCgi(const HttpRequest &req,
 
 	if (WIFEXITED(status) && WEXITSTATUS(status) != 0)
 		return makeErrorResponse(502);
-
 	return parseCgiOutput(cgiOutput);
 }
