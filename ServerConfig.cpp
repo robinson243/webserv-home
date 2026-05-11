@@ -6,7 +6,7 @@
 /*   By: ydembele <ydembele@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/04/16 13:40:39 by ydembele          #+#    #+#             */
-/*   Updated: 2026/05/11 15:42:40 by ydembele         ###   ########.fr       */
+/*   Updated: 2026/05/11 15:45:05 by ydembele         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -61,7 +61,8 @@ std::vector<ServerConfig> pars(const std::string &file)
 		throw std::runtime_error("file is not a config file");
 	if (file.substr(file.size() - 5) != ".conf")
 		throw std::runtime_error("file is not a config file");
-	std::string content = LoadConfigFile(file)
+	std::string content = LoadConfigFile(file);
+
 	if (content.empty())
     	throw std::runtime_error("Config file is empty or cannot be read");
 	
