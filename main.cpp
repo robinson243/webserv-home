@@ -183,6 +183,5 @@ int main(int argc, char **argv)
 	EventLoop server(serverconfig);
 	signal(SIGINT, signalHandler);
 	server.run();
-	delete g_eventloop;
 	return (0);
 }

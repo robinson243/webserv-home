@@ -6,7 +6,7 @@
 /*   By: oamairi <oamairi@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/04/30 18:32:40 by oamairi           #+#    #+#             */
-/*   Updated: 2026/05/09 17:16:14 by oamairi          ###   ########.fr       */
+/*   Updated: 2026/05/11 15:41:39 by oamairi          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -57,10 +57,11 @@ void	EventLoop::run()
 	while (_run)
 	{
 		if (poll(_fds.data(), _fds.size(), -1) == -1)
-			(perror("poll error"), exit(1));
-		
+		{
+			perror("poll error");
+			break;
+		}
 		std::vector<pollfd> temp;
-
 		for (size_t i = 0; i < _fds.size(); i++)
 		{
 			if (_fds[i].revents == 0)
@@ -77,9 +78,15 @@ void	EventLoop::run()
 					}
 					int flags = fcntl(clientFd, F_GETFL, 0);
 					if (flags == -1)
-						(perror("fcntl(F_GETFL) error"), exit(1));
+					{
+						perror("fcntl(F_GETFL) error");
+						break;
+					}
 					if (fcntl(clientFd, F_SETFL, flags | O_NONBLOCK | FD_CLOEXEC) == -1)
-						(perror("fcntl(F_SETFL) error"), exit(1));
+					{
+						perror("fcntl(F_SETFL) error");
+						break;
+					}
 					struct pollfd polfd;
 					polfd.fd = clientFd;
 					polfd.events = POLLIN;
@@ -139,4 +146,8 @@ void	EventLoop::stop()
 	_run = false;
 }
 
-EventLoop::~EventLoop() {};
+EventLoop::~EventLoop() 
+{
+	for (size_t i = 0; i < _fds.size(); i++)
+		close(_fds[i].fd);
+}
