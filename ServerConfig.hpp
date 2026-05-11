@@ -6,7 +6,7 @@
 /*   By: ydembele <ydembele@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/04/14 15:01:30 by romukena          #+#    #+#             */
-/*   Updated: 2026/05/11 15:33:17 by ydembele         ###   ########.fr       */
+/*   Updated: 2026/05/11 16:39:51 by ydembele         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -29,7 +29,7 @@
 #include "LocationConfig.hpp"
 
 // class ServerConfig;
-// class LocationConfig;
+class LocationConfig;
 
 
 struct Token
