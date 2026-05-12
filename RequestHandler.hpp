@@ -22,9 +22,9 @@ bool isImplementedMethod(const std::string &m);
 
 std::string buildAllowHeader(const std::set<std::string> &allow);
 
-HttpResponse makeRedirectResponse(int code, const std::string &url);
+// HttpResponse makeRedirectResponse(int code, const std::string &url);
 
-HttpResponse makeErrorResponse(int code);
+HttpResponse makeResponse(int code);
 
 std::set<std::string> defaultAllowedMethodsIfEmpty(std::set<std::string> allow);
 
