@@ -39,38 +39,6 @@ std::string buildAllowHeader(const std::set<std::string> &allow) {
 	return out;
 }
 
-// HttpResponse makeRedirectResponse(int code, const std::string &url) {
-// 	HttpResponse r;
-// 	std::string body;
-
-// 	if (code == 400)
-// 		body = "<html><body><h1>400 Bad Request</h1></body></html>";
-// 	else if (code == 403)
-// 		body = "<html><body><h1>403 Forbidden</h1></body></html>";
-// 	else if (code == 404)
-// 		body = "<html><body><h1>404 Not Found</h1></body></html>";
-// 	else if (code == 405)
-// 		body = "<html><body><h1>405 Method Not Allowed</h1></body></html>";
-// 	else if (code == 413)
-// 		body = "<html><body><h1>413 Payload Too Large</h1></body></html>";
-// 	else if (code == 500)
-// 		body = "<html><body><h1>500 Internal Server Error</h1></body></html>";
-// 	else if (code == 502)
-// 		body = "<html><body><h1>502 Bad Gateway</h1></body></html>";
-// 	else if (code == 504)
-// 		body = "<html><body><h1>504 Gateway Timeout</h1></body></html>";
-// 	else
-// 		body = "<html><body><h1>Error</h1></body></html>";
-
-// 	r.addCode(code);
-// 	r.addHeadersResponse("Content-Type", "text/html");
-// 	std::ostringstream ss;
-// 	ss << body.size();
-// 	r.addHeadersResponse("Content-Length", ss.str());
-// 	r.setBody(std::vector<unsigned char>(body.begin(), body.end()));
-// 	return r;
-// }
-
 HttpResponse makeResponse(int code) {
 	HttpResponse r;
 	std::string body;
@@ -223,15 +191,14 @@ HttpResponse Get(const HttpRequest &req, const ServerConfig &server) {
 	struct stat st;
 	HttpResponse response;
 	int valLocation = findLocation(server, req);
-	int locIndex = valLocation;
 	std::vector<LocationConfig> locations = server.getLocations();
 
-	if (locations.empty() || locIndex == -1) {
+	if (locations.empty() || valLocation == -1) {
 		response = makeResponse(404);
 		return response;
 	}
 
-	const LocationConfig &loc = locations[locIndex];
+	const LocationConfig &loc = locations[valLocation];
 
 	if (loc.getCode() >= 300 && loc.getCode() < 400 && !loc.getUrl().empty()) {
 		HttpResponse resp;
@@ -285,11 +252,6 @@ HttpResponse Get(const HttpRequest &req, const ServerConfig &server) {
 					}
 					std::string contentType = getContentType(indexPath);
 					response = makeResponse(200);
-					response.addHeadersResponse("Content-Type", contentType);
-					std::ostringstream oss;
-					oss << body.length();
-					response.addHeadersResponse("Content-Length", oss.str());
-					response.addBodyResponse(body);
 					return response;
 				}
 			}
@@ -536,20 +498,20 @@ HttpResponse Post(const HttpRequest &req, const ServerConfig &server) {
 	return response;
 }
 
-void fillDefaultErrorBody(HttpResponse &resp) {
-	int code = resp.getCode();
-	// Simple pages
-	std::ostringstream html;
-	html << "<html><head><title>" << code << "</title></head>"
-		 << "<body><h1>" << code << "</h1></body></html>";
-	std::string body = html.str();
+// void fillDefaultErrorBody(HttpResponse &resp) {
+// 	int code = resp.getCode();
+// 	// Simple pages
+// 	std::ostringstream html;
+// 	html << "<html><head><title>" << code << "</title></head>"
+// 		 << "<body><h1>" << code << "</h1></body></html>";
+// 	std::string body = html.str();
 
-	resp.addHeadersResponse("Content-Type", "text/html");
-	std::ostringstream len;
-	len << body.size();
-	resp.addHeadersResponse("Content-Length", len.str());
-	resp.addBodyResponse(body);
-}
+// 	resp.addHeadersResponse("Content-Type", "text/html");
+// 	std::ostringstream len;
+// 	len << body.size();
+// 	resp.addHeadersResponse("Content-Length", len.str());
+// 	resp.addBodyResponse(body);
+// }
 
 ServerConfig selectServer(const std::vector<ServerConfig> &servers,
 						  const HttpRequest &req) {
@@ -585,28 +547,28 @@ HttpResponse handleRequest(const HttpRequest &req,
 	ServerConfig server = selectServer(servers, req);
 	if (!req.getValid()) {
 		response = makeResponse(req.getCode());
-		fillDefaultErrorBody(response);
 		return response;
 	}
 
 	int valLocation = findLocation(server, req);
 	if (valLocation == -1) {
 		response = makeResponse(404);
-		fillDefaultErrorBody(response);
 		return response;
 	}
 
 	const std::vector<LocationConfig> &locations = server.getLocations();
 	const LocationConfig &loc = locations[valLocation];
 
-	if (loc.getCode() >= 300 && loc.getCode() < 400 && !loc.getUrl().empty())
-		return makeResponse(loc.getCode());
+	if (loc.getCode() >= 300 && loc.getCode() < 400 && !loc.getUrl().empty()) {
+    HttpResponse resp = makeResponse(loc.getCode());
+    resp.addHeadersResponse("Location", loc.getUrl());
+    return resp;
+}
 
 	const std::map<std::string, std::string> &r = req.getRequest();
 	std::map<std::string, std::string>::const_iterator it = r.find("method");
 	if (it == r.end()) {
 		response = makeResponse(400);
-		fillDefaultErrorBody(response);
 		return response;
 	}
 
@@ -616,14 +578,12 @@ HttpResponse handleRequest(const HttpRequest &req,
 
 	if (!isImplementedMethod(method)) {
 		response = makeResponse(501);
-		fillDefaultErrorBody(response);
 		return response;
 	}
 
 	if (allowMeth.find(method) == allowMeth.end()) {
 		response = makeResponse(405);
 		response.addHeadersResponse("Allow", buildAllowHeader(allowMeth));
-		fillDefaultErrorBody(response);
 		return response;
 	}
 
@@ -649,7 +609,7 @@ HttpResponse handleRequest(const HttpRequest &req,
 		response = makeResponse(501);
 
 	if (response.getCode() >= 400)
-		fillDefaultErrorBody(response);
+		makeResponse(response);
 
 	return response;
 }
