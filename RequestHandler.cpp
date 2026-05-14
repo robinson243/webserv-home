@@ -560,10 +560,10 @@ HttpResponse handleRequest(const HttpRequest &req,
 	const LocationConfig &loc = locations[valLocation];
 
 	if (loc.getCode() >= 300 && loc.getCode() < 400 && !loc.getUrl().empty()) {
-    HttpResponse resp = makeResponse(loc.getCode());
-    resp.addHeadersResponse("Location", loc.getUrl());
-    return resp;
-}
+		HttpResponse resp = makeResponse(loc.getCode());
+		resp.addHeadersResponse("Location", loc.getUrl());
+		return resp;
+	}
 
 	const std::map<std::string, std::string> &r = req.getRequest();
 	std::map<std::string, std::string>::const_iterator it = r.find("method");
@@ -607,9 +607,6 @@ HttpResponse handleRequest(const HttpRequest &req,
 		response = Delete(req, server);
 	else
 		response = makeResponse(501);
-
-	if (response.getCode() >= 400)
-		makeResponse(response);
 
 	return response;
 }
