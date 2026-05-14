@@ -171,7 +171,7 @@ bool HttpRequest::validateBody(std::string &e) {
 	if (!isNumber(contentLength))
 		return false;
 	long numContentLength = strtol(contentLength.c_str(), &pEnd, 10);
-	if (numContentLength <= 0 || numContentLength != e.length()) {
+	if (numContentLength <= 0 || numContentLength != (long)e.length()) {
 		_code = 400;
 		return false;
 	}
