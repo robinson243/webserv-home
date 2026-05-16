@@ -41,8 +41,7 @@ HttpResponse parseCgiOutput(const std::vector<unsigned char> &output) {
 	}
 
 	if (sepPos == std::string::npos)
-		return makeErrorResponse(
-			502); // pas de séparateur -> réponse CGI invalide
+		return makeResponse(502); // pas de séparateur -> réponse CGI invalide
 
 	std::string headerSection = raw.substr(0, sepPos);
 	std::string bodySection = raw.substr(sepPos + sep.size());
@@ -149,7 +148,7 @@ HttpResponse handleCgi(const HttpRequest &req,
 		}
 	}
 	if (scriptPath.empty())
-		return makeErrorResponse(500);
+		return makeResponse(500);
 	char **envp = new char *[envpVec.size() + 1];
 	for (size_t i = 0; i < envpVec.size(); ++i) {
 		envp[i] = new char[envpVec[i].size() + 1];
@@ -165,12 +164,12 @@ HttpResponse handleCgi(const HttpRequest &req,
 	pid_t pid;
 
 	if (pipe(pipefdIn) == -1)
-		return freeEnvp(envp, envpVec.size()), makeErrorResponse(500);
+		return freeEnvp(envp, envpVec.size()), makeResponse(500);
 
 	if (pipe(pipefdOut) == -1) {
 		close(pipefdIn[0]);
 		close(pipefdIn[1]);
-		return freeEnvp(envp, envpVec.size()), makeErrorResponse(500);
+		return freeEnvp(envp, envpVec.size()), makeResponse(500);
 	}
 
 	pid = fork();
@@ -179,7 +178,7 @@ HttpResponse handleCgi(const HttpRequest &req,
 		close(pipefdIn[1]);
 		close(pipefdOut[0]);
 		close(pipefdOut[1]);
-		return freeEnvp(envp, envpVec.size()), makeErrorResponse(500);
+		return freeEnvp(envp, envpVec.size()), makeResponse(500);
 	}
 
 	if (pid == 0) {
@@ -222,7 +221,7 @@ HttpResponse handleCgi(const HttpRequest &req,
 			close(pipefdOut[0]);
 			kill(pid, SIGKILL);
 			waitpid(pid, NULL, 0);
-			return freeEnvp(envp, envpVec.size()), makeErrorResponse(500);
+			return freeEnvp(envp, envpVec.size()), makeResponse(500);
 		}
 	}
 	close(pipefdIn[1]);
@@ -238,7 +237,7 @@ HttpResponse handleCgi(const HttpRequest &req,
 			close(pipefdOut[0]);
 			kill(pid, SIGKILL);
 			waitpid(pid, NULL, 0);
-			return freeEnvp(envp, envpVec.size()), makeErrorResponse(504);
+			return freeEnvp(envp, envpVec.size()), makeResponse(504);
 		}
 
 		n = read(pipefdOut[0], buf, sizeof(buf));
@@ -246,7 +245,7 @@ HttpResponse handleCgi(const HttpRequest &req,
 			close(pipefdOut[0]);
 			kill(pid, SIGKILL);
 			waitpid(pid, NULL, 0);
-			return freeEnvp(envp, envpVec.size()), makeErrorResponse(500);
+			return freeEnvp(envp, envpVec.size()), makeResponse(500);
 		}
 		if (n == 0)
 			break;
@@ -261,6 +260,6 @@ HttpResponse handleCgi(const HttpRequest &req,
 	freeEnvp(envp, envpVec.size());
 
 	if (WIFEXITED(status) && WEXITSTATUS(status) != 0)
-		return makeErrorResponse(502);
+		return makeResponse(502);
 	return parseCgiOutput(cgiOutput);
 }
