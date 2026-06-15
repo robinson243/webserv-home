@@ -43,32 +43,88 @@ HttpResponse makeResponse(int code) {
 	HttpResponse r;
 	std::string body;
 
-	if (code == 400)
+	if (code == 100)
+		body = "<html><body><h1>100 Continue</h1></body></html>";
+	else if (code == 101)
+		body = "<html><body><h1>101 Switching Protocols</h1></body></html>";
+
+	// 2xx Success
+	else if (code == 200)
+		body = "<html><body><h1>200 OK</h1></body></html>";
+	else if (code == 201)
+		body = "<html><body><h1>201 Created</h1></body></html>";
+	else if (code == 202)
+		body = "<html><body><h1>202 Accepted</h1></body></html>";
+	else if (code == 204)
+		body = "<html><body><h1>204 No Content</h1></body></html>";
+
+	// 3xx Redirection
+	else if (code == 301)
+		body = "<html><body><h1>301 Moved Permanently</h1></body></html>";
+	else if (code == 302)
+		body = "<html><body><h1>302 Found</h1></body></html>";
+	else if (code == 303)
+		body = "<html><body><h1>303 See Other</h1></body></html>";
+	else if (code == 304)
+		body = "<html><body><h1>304 Not Modified</h1></body></html>";
+	else if (code == 307)
+		body = "<html><body><h1>307 Temporary Redirect</h1></body></html>";
+	else if (code == 308)
+		body = "<html><body><h1>308 Permanent Redirect</h1></body></html>";
+
+	// 4xx Client Errors
+	else if (code == 400)
 		body = "<html><body><h1>400 Bad Request</h1></body></html>";
+	else if (code == 401)
+		body = "<html><body><h1>401 Unauthorized</h1></body></html>";
 	else if (code == 403)
 		body = "<html><body><h1>403 Forbidden</h1></body></html>";
 	else if (code == 404)
 		body = "<html><body><h1>404 Not Found</h1></body></html>";
 	else if (code == 405)
 		body = "<html><body><h1>405 Method Not Allowed</h1></body></html>";
+	else if (code == 408)
+		body = "<html><body><h1>408 Request Timeout</h1></body></html>";
+	else if (code == 409)
+		body = "<html><body><h1>409 Conflict</h1></body></html>";
+	else if (code == 410)
+		body = "<html><body><h1>410 Gone</h1></body></html>";
+	else if (code == 411)
+		body = "<html><body><h1>411 Length Required</h1></body></html>";
 	else if (code == 413)
 		body = "<html><body><h1>413 Payload Too Large</h1></body></html>";
+	else if (code == 414)
+		body = "<html><body><h1>414 URI Too Long</h1></body></html>";
+	else if (code == 415)
+		body = "<html><body><h1>415 Unsupported Media Type</h1></body></html>";
+	else if (code == 429)
+		body = "<html><body><h1>429 Too Many Requests</h1></body></html>";
+
+	// 5xx Server Errors
 	else if (code == 500)
 		body = "<html><body><h1>500 Internal Server Error</h1></body></html>";
+	else if (code == 501)
+		body = "<html><body><h1>501 Not Implemented</h1></body></html>";
 	else if (code == 502)
 		body = "<html><body><h1>502 Bad Gateway</h1></body></html>";
+	else if (code == 503)
+		body = "<html><body><h1>503 Service Unavailable</h1></body></html>";
 	else if (code == 504)
 		body = "<html><body><h1>504 Gateway Timeout</h1></body></html>";
-	else if (code == 200)
-		body = "";
+	else if (code == 505)
+		body =
+			"<html><body><h1>505 HTTP Version Not Supported</h1></body></html>";
+
 	else
-		body = "<html><body><h1>Error</h1></body></html>";
+		body = "<html><body><h1>500 Internal Server Error</h1></body></html>";
 
 	r.addCode(code);
 	r.addHeadersResponse("Content-Type", "text/html");
+
 	std::ostringstream ss;
 	ss << body.size();
 	r.addHeadersResponse("Content-Length", ss.str());
+
 	r.setBody(std::vector<unsigned char>(body.begin(), body.end()));
 	return r;
 }
@@ -455,10 +511,8 @@ HttpResponse Post(const HttpRequest &req, const ServerConfig &server) {
 		return response;
 	}
 
-	if (loc.gethasmaxsize() && loc.getMaxBody() < body.size()) {
-		response = makeResponse(413);
-		return response;
-	}
+	if (loc.gethasmaxsize() && loc.getMaxBody() < body.size())
+		return makeResponse(413);
 
 	std::map<std::string, std::string> r = req.getRequest();
 	std::string uri = r["uri"];
