@@ -422,6 +422,10 @@ HttpResponse Post(const HttpRequest &req, const ServerConfig &server) {
 		return response;
 	}
 
+	size_t maxBody = server.getBodySizeClient();
+	size_t contentLength = req.getBody().size();
+	if (maxBody != 0 && contentLength > maxBody)
+		return makeResponse(413);
 	const LocationConfig &loc = locations[valLocation];
 
 	if (loc.hasRedirect()) {

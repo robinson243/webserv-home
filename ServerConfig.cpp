@@ -219,8 +219,6 @@ size_t findSize(std::vector<Token>::iterator &it, std::vector<Token>::iterator e
 	if (!isNumber(it->value))
     throw std::runtime_error("client_max_body_size: Invalid body size");
 	size_t value = strtoul((it->value).c_str(), NULL, 10);
-	if (value == 0)
-    throw std::runtime_error("client_max_body_size: Body size must be > 0");
 	++it;
 	if (it == end || *it != ";" || it->in_quotes)
 		throw std::runtime_error("client_max_body_size: Body size: missing ';");
