@@ -67,7 +67,7 @@ static std::string codeReturn(int code) {
 		e = "Bad Gateway";
 	else if (code == 504)
 		e = "Gateway Timeout";
-	else 
+	else
 		e = "Unknown";
 	return e;
 }
@@ -92,7 +92,7 @@ void HttpResponse::addBodyResponse(std::string &e) {
 
 void HttpResponse::addHeadersResponse(const std::string &key,
 									  const std::string &e) {
-	_headers.insert(std::pair<std::string, std::string>(key, e));
+	_headers[key] = e;
 }
 
 void HttpResponse::setBody(const std::vector<unsigned char> &body) {

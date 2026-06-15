@@ -59,6 +59,8 @@ HttpResponse makeResponse(int code) {
 		body = "<html><body><h1>502 Bad Gateway</h1></body></html>";
 	else if (code == 504)
 		body = "<html><body><h1>504 Gateway Timeout</h1></body></html>";
+	else if (code == 200)
+		body = "";
 	else
 		body = "<html><body><h1>Error</h1></body></html>";
 
@@ -252,6 +254,11 @@ HttpResponse Get(const HttpRequest &req, const ServerConfig &server) {
 					}
 					std::string contentType = getContentType(indexPath);
 					response = makeResponse(200);
+					response.addHeadersResponse("Content-Type", contentType);
+					std::ostringstream oss;
+					oss << body.length();
+					response.addHeadersResponse("Content-Length", oss.str());
+					response.addBodyResponse(body);
 					return response;
 				}
 			}
