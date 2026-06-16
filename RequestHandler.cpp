@@ -115,17 +115,16 @@ HttpResponse makeResponse(int code) {
 		body =
 			"<html><body><h1>505 HTTP Version Not Supported</h1></body></html>";
 
-	else
-		body = "<html><body><h1>500 Internal Server Error</h1></body></html>";
-
 	r.addCode(code);
-	r.addHeadersResponse("Content-Type", "text/html");
 
-	std::ostringstream ss;
-	ss << body.size();
-	r.addHeadersResponse("Content-Length", ss.str());
+	if (!body.empty()) {
+		r.addHeadersResponse("Content-Type", "text/html");
+		std::ostringstream ss;
+		ss << body.size();
+		r.addHeadersResponse("Content-Length", ss.str());
+		r.setBody(std::vector<unsigned char>(body.begin(), body.end()));
+	}
 
-	r.setBody(std::vector<unsigned char>(body.begin(), body.end()));
 	return r;
 }
 
@@ -314,7 +313,8 @@ HttpResponse Get(const HttpRequest &req, const ServerConfig &server) {
 					std::ostringstream oss;
 					oss << body.length();
 					response.addHeadersResponse("Content-Length", oss.str());
-					response.addBodyResponse(body);
+					response.setBody(
+						std::vector<unsigned char>(body.begin(), body.end()));
 					return response;
 				}
 			}
