@@ -675,14 +675,18 @@ HttpResponse handleRequest(const HttpRequest &req,
 			return handleCgi(req, loc, ext);
 	}
 
-	if (method == "GET" || method == "HEAD")
+	if (method == "GET") {
 		response = Get(req, server);
-	else if (method == "POST")
+	} else if (method == "HEAD") {
+		response = Get(req, server);
+		response.setBody(std::vector<unsigned char>());
+	} else if (method == "POST") {
 		response = Post(req, server);
-	else if (method == "DELETE")
+	} else if (method == "DELETE") {
 		response = Delete(req, server);
-	else
+	} else {
 		response = makeResponse(501);
+	}
 
 	return response;
 }
