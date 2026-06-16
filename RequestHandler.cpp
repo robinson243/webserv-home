@@ -680,6 +680,7 @@ HttpResponse handleRequest(const HttpRequest &req,
 	} else if (method == "HEAD") {
 		response = Get(req, server);
 		response.setBody(std::vector<unsigned char>());
+		response.addHeadersResponse("Connection", "close");
 	} else if (method == "POST") {
 		response = Post(req, server);
 	} else if (method == "DELETE") {
