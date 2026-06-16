@@ -130,8 +130,8 @@ void validateServer(ServerConfig &server)
 			loc.setRoot(server.getRoot());
 		if (loc.getIndex().empty())
 			loc.setIndex(server.getIndex());
-		if (loc.gethasmaxsize() == 0 && server.getHasMaxSize())
-			loc.setMaxBody(server.getBodySizeClient());
+		// if (loc.gethasmaxsize() == 0 && server.getHasMaxSize())
+		// 	loc.setMaxBody(server.getBodySizeClient());
 	}
 }
 

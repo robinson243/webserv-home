@@ -147,13 +147,20 @@ int findLocation(ServerConfig server, HttpRequest req) {
 	std::vector<LocationConfig> loc = server.getLocations();
 	int val = -1;
 	size_t longestMatch = 0;
+
 	for (it = loc.begin(); it != loc.end(); ++it) {
 		std::string path = (*it).getPath();
-		if (uri.compare(0, path.size(), path) == 0
-			&& (uri.size() == path.size() || uri[path.size()] == '/'
-				|| path == "/")
-			&& path.size() > longestMatch) {
-			longestMatch = path.size();
+
+		// Normalise : retire le slash final du path pour la comparaison
+		std::string normPath = path;
+		if (normPath.size() > 1 && normPath[normPath.size() - 1] == '/')
+			normPath = normPath.substr(0, normPath.size() - 1);
+
+		if (uri.compare(0, normPath.size(), normPath) == 0
+			&& (uri.size() == normPath.size() || uri[normPath.size()] == '/'
+				|| normPath == "" || path == "/")
+			&& normPath.size() > longestMatch) {
+			longestMatch = normPath.size();
 			val = std::distance(loc.begin(), it);
 		}
 	}
@@ -485,11 +492,12 @@ HttpResponse Post(const HttpRequest &req, const ServerConfig &server) {
 		return response;
 	}
 
+	const LocationConfig &loc = locations[valLocation];
+
 	size_t maxBody = server.getBodySizeClient();
 	size_t contentLength = req.getBody().size();
-	if (maxBody != 0 && contentLength > maxBody)
+	if (maxBody != 0 && !loc.gethasmaxsize() && contentLength > maxBody)
 		return makeResponse(413);
-	const LocationConfig &loc = locations[valLocation];
 
 	if (loc.hasRedirect()) {
 		HttpResponse resp;
@@ -661,12 +669,6 @@ HttpResponse handleRequest(const HttpRequest &req,
 		return response;
 	}
 
-	if (allowMeth.find(method) == allowMeth.end()) {
-		response = makeResponse(405);
-		response.addHeadersResponse("Allow", buildAllowHeader(allowMeth));
-		return response;
-	}
-
 	std::string uri = req.getRequest().at("uri");
 	size_t qpos = uri.find("?");
 	std::string path = (qpos == std::string::npos) ? uri : uri.substr(0, qpos);
@@ -675,8 +677,14 @@ HttpResponse handleRequest(const HttpRequest &req,
 		std::string ext = path.substr(dotpos);
 		const std::map<std::string, std::string> &cgiExt =
 			loc.getCgiExtension();
-		if (cgiExt.find(ext) != cgiExt.end())
+		if (cgiExt.find(ext) != cgiExt.end() && method == "POST")
 			return handleCgi(req, loc, ext);
+	}
+
+	if (allowMeth.find(method) == allowMeth.end()) {
+		response = makeResponse(405);
+		response.addHeadersResponse("Allow", buildAllowHeader(allowMeth));
+		return response;
 	}
 
 	if (method == "GET") {
