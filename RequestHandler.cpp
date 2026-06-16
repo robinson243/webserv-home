@@ -285,7 +285,8 @@ HttpResponse Get(const HttpRequest &req, const ServerConfig &server) {
 			std::ostringstream oss;
 			oss << body.length();
 			response.addHeadersResponse("Content-Length", oss.str());
-			response.addBodyResponse(body);
+			response.setBody(
+				std::vector<unsigned char>(body.begin(), body.end()));
 			return response;
 		} else if (S_ISDIR(st.st_mode)) {
 			std::string uri = req.getRequest().at("uri");
@@ -362,7 +363,8 @@ HttpResponse Get(const HttpRequest &req, const ServerConfig &server) {
 				response = makeResponse(200);
 				response.addHeadersResponse("Content-Type", "text/html");
 				response.addHeadersResponse("Content-Length", oss.str());
-				response.addBodyResponse(html);
+				response.setBody(
+					std::vector<unsigned char>(html.begin(), html.end()));
 				return response;
 			} else {
 				response = makeResponse(403);
@@ -373,6 +375,7 @@ HttpResponse Get(const HttpRequest &req, const ServerConfig &server) {
 	response = makeResponse(404);
 	return response;
 }
+
 std::string concatenateLocationPath(const LocationConfig &loc,
 									const HttpRequest &req) {
 	std::string uri = req.getRequest().at("uri");
