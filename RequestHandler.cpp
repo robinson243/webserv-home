@@ -511,7 +511,7 @@ HttpResponse Post(const HttpRequest &req, const ServerConfig &server) {
 		return response;
 	}
 
-	if (loc.gethasmaxsize() && loc.getMaxBody() < body.size())
+	if (loc.gethasmaxsize() && body.size() > loc.getMaxBody())
 		return makeResponse(413);
 
 	std::map<std::string, std::string> r = req.getRequest();
@@ -532,7 +532,11 @@ HttpResponse Post(const HttpRequest &req, const ServerConfig &server) {
 		response = makeResponse(400);
 		return response;
 	}
-	if (filename.find("..") != std::string::npos) {
+	if (filename.find("..") != std::string::npos
+		|| filename.find("%2e%2e") != std::string::npos
+		|| filename.find("%2E%2E") != std::string::npos
+		|| filename.find("%2e%2E") != std::string::npos
+		|| filename.find("%2E%2e") != std::string::npos) {
 		response = makeResponse(403);
 		return response;
 	}
@@ -544,7 +548,11 @@ HttpResponse Post(const HttpRequest &req, const ServerConfig &server) {
 		return response;
 	}
 
-	std::string path = baseDir + "/" + filename;
+	std::string path;
+	if (!baseDir.empty() && baseDir[baseDir.size() - 1] == '/')
+		path = baseDir + filename;
+	else
+		path = baseDir + "/" + filename;
 
 	std::ofstream file(path.c_str(), std::ios::binary);
 	if (!file.is_open()) {

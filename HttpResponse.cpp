@@ -100,17 +100,20 @@ void HttpResponse::setBody(const std::vector<unsigned char> &body) {
 }
 
 std::string HttpResponse::serialize() {
-	std::string final;
-	std::ostringstream oss;
-	oss << _code;
-	final = _version + " " + oss.str() + " " + _message + "\r\n";
-	std::map<std::string, std::string>::iterator it;
-	for (it = _headers.begin(); it != _headers.end(); ++it) {
-		std::string str;
-		str = it->first + ": " + it->second + "\r\n";
-		final += str;
-	}
-	std::string body(_body.begin(), _body.end());
-	final += "\r\n" + body;
-	return final;
+    std::string final;
+    std::string body(_body.begin(), _body.end());
+
+    std::ostringstream lenOss;
+    lenOss << body.size();
+    _headers["Content-Length"] = lenOss.str();
+
+    std::ostringstream oss;
+    oss << _code;
+    final = _version + " " + oss.str() + " " + _message + "\r\n";
+    for (std::map<std::string, std::string>::iterator it = _headers.begin();
+         it != _headers.end(); ++it) {
+        final += it->first + ": " + it->second + "\r\n";
+    }
+    final += "\r\n" + body;
+    return final;
 }
