@@ -675,7 +675,7 @@ HttpResponse handleRequest(const HttpRequest &req,
 			return handleCgi(req, loc, ext);
 	}
 
-	if (method == "GET")
+	if (method == "GET" || method == "HEAD")
 		response = Get(req, server);
 	else if (method == "POST")
 		response = Post(req, server);
