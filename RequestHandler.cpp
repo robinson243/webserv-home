@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   RequestHandler.cpp                                 :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: romukena <romukena@student.42.fr>          +#+  +:+       +#+        */
+/*   By: oamairi <oamairi@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/04/24 14:36:05 by romukena          #+#    #+#             */
-/*   Updated: 2026/05/07 00:01:44 by romukena         ###   ########.fr       */
+/*   Updated: 2026/06/16 12:41:11 by oamairi          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -129,7 +129,7 @@ HttpResponse makeResponse(int code) {
 	return r;
 }
 
-// Choix "sujet-friendly": si allow_methods est vide, on autorise au moins
+// Choix "sujet-friendly": si allowed_methods est vide, on autorise au moins
 // GET/POST/DELETE.
 std::set<std::string>
 defaultAllowedMethodsIfEmpty(std::set<std::string> allow) {
@@ -612,7 +612,7 @@ ServerConfig selectServer(const std::vector<ServerConfig> &servers,
 	return servers[0];
 }
 
-// Politique choisie : si allow_methods est vide sur une location,
+// Politique choisie : si allowed_methods est vide sur une location,
 // on autorise par défaut les 3 méthodes mandatory : GET, POST, DELETE.
 HttpResponse handleRequest(const HttpRequest &req,
 						   const std::vector<ServerConfig> &servers) {
