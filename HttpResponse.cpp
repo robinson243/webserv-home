@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   HttpResponse.cpp                                   :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: romukena <romukena@student.42.fr>          +#+  +:+       +#+        */
+/*   By: oamairi <oamairi@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/04/16 14:09:04 by romukena          #+#    #+#             */
-/*   Updated: 2026/05/06 01:43:21 by romukena         ###   ########.fr       */
+/*   Updated: 2026/06/16 16:30:37 by oamairi          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -76,6 +76,8 @@ void HttpResponse::addCode(int code) {
 	_code = code;
 	_version = "HTTP/1.1";
 	_message = codeReturn(code);
+	if (code >= 300)
+		_headers["Connection"] = "close";
 }
 
 void HttpResponse::addVersion(std::string &e) {

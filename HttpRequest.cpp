@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   HttpRequest.cpp                                    :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: romukena <romukena@student.42.fr>          +#+  +:+       +#+        */
+/*   By: oamairi <oamairi@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/04/14 15:16:54 by romukena          #+#    #+#             */
-/*   Updated: 2026/05/01 00:54:29 by romukena         ###   ########.fr       */
+/*   Updated: 2026/06/16 16:13:50 by oamairi          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -100,7 +100,7 @@ void HttpRequest::addRequestLine(std::stringstream &str) {
 	}
 	while (s >> token) {
 		if (i == 0) {
-			if (token != "GET" && token != "POST" && token != "DELETE") {
+			if (token != "GET" && token != "POST" && token != "DELETE" && token != "HEAD") {
 				_code = 501;
 				return;
 			}

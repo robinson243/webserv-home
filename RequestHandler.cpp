@@ -6,7 +6,7 @@
 /*   By: oamairi <oamairi@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/04/24 14:36:05 by romukena          #+#    #+#             */
-/*   Updated: 2026/06/16 12:41:11 by oamairi          ###   ########.fr       */
+/*   Updated: 2026/06/16 16:26:18 by oamairi          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -23,7 +23,7 @@
 #include <string>
 
 bool isImplementedMethod(const std::string &m) {
-	return (m == "GET" || m == "POST" || m == "DELETE");
+	return (m == "GET" || m == "POST" || m == "DELETE" || m == "HEAD");
 }
 
 std::string buildAllowHeader(const std::set<std::string> &allow) {
@@ -267,7 +267,11 @@ HttpResponse Get(const HttpRequest &req, const ServerConfig &server) {
 	std::vector<std::string> indexes = loc.getIndex();
 	if (indexes.empty())
 		indexes = server.getIndex();
-	std::string path = concatenatePath(server, req);
+	std::string path;
+	if (!loc.getRoot().empty())
+		path = concatenateLocationPath(loc, req);
+	else
+		path = concatenatePath(server, req);
 	if (path.empty()) {
 		response = makeResponse(403);
 		return response;
@@ -367,7 +371,7 @@ HttpResponse Get(const HttpRequest &req, const ServerConfig &server) {
 					std::vector<unsigned char>(html.begin(), html.end()));
 				return response;
 			} else {
-				response = makeResponse(403);
+				response = makeResponse(404);
 				return response;
 			}
 		}
