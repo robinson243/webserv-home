@@ -602,8 +602,8 @@ HttpResponse Post(const HttpRequest &req, const ServerConfig &server) {
 // 	resp.addBodyResponse(body);
 // }
 
-ServerConfig selectServer(const std::vector<ServerConfig> &servers,
-						  const HttpRequest &req) {
+const ServerConfig &selectServer(const std::vector<ServerConfig> &servers,
+								 const HttpRequest &req) {
 	std::map<std::string, std::string> headers = req.getHeaders();
 	std::map<std::string, std::string>::const_iterator it =
 		headers.find("Host");

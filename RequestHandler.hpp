@@ -46,8 +46,8 @@ HttpResponse Post(const HttpRequest &req, const ServerConfig &server);
 
 void fillDefaultErrorBody(HttpResponse &resp);
 
-ServerConfig selectServer(const std::vector<ServerConfig> &servers,
-						  const HttpRequest &req);
+const ServerConfig &selectServer(const std::vector<ServerConfig> &servers,
+								 const HttpRequest &req);
 
 HttpResponse handleRequest(const HttpRequest &req,
 						   const std::vector<ServerConfig> &servers);

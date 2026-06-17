@@ -162,6 +162,8 @@ HttpResponse handleCgi(const HttpRequest &req,
 	int pipefdIn[2];
 	int pipefdOut[2];
 	pid_t pid;
+	int saved_stdin = dup(STDIN_FILENO);
+	int saved_stdout = dup(STDOUT_FILENO);
 
 	if (pipe(pipefdIn) == -1)
 		return freeEnvp(envp, envpVec.size()), makeResponse(500);
@@ -259,7 +261,13 @@ HttpResponse handleCgi(const HttpRequest &req,
 
 	freeEnvp(envp, envpVec.size());
 
+	dup2(saved_stdin, STDIN_FILENO);
+	dup2(saved_stdout, STDOUT_FILENO);
+	close(saved_stdin);
+	close(saved_stdout);
+
 	if (WIFEXITED(status) && WEXITSTATUS(status) != 0)
 		return makeResponse(502);
+	return parseCgiOutput(cgiOutput);
 	return parseCgiOutput(cgiOutput);
 }
