@@ -140,7 +140,7 @@ defaultAllowedMethodsIfEmpty(std::set<std::string> allow) {
 	return allow;
 }
 
-int findLocation(ServerConfig server, HttpRequest req) {
+int findLocation(const ServerConfig &server, const HttpRequest &req) {
 	std::map<std::string, std::string> r = req.getRequest();
 	std::string uri = r["uri"];
 	std::vector<LocationConfig>::iterator it;
@@ -167,7 +167,8 @@ int findLocation(ServerConfig server, HttpRequest req) {
 	return val;
 }
 
-std::string concatenatePath(ServerConfig server, HttpRequest req) {
+std::string concatenatePath(const ServerConfig &server,
+							const HttpRequest &req) {
 	std::map<std::string, std::string> r = req.getRequest();
 	std::string uri = r["uri"];
 	size_t q = uri.find('?');
@@ -632,7 +633,7 @@ ServerConfig selectServer(const std::vector<ServerConfig> &servers,
 HttpResponse handleRequest(const HttpRequest &req,
 						   const std::vector<ServerConfig> &servers) {
 	HttpResponse response;
-	ServerConfig server = selectServer(servers, req);
+	const ServerConfig &server = selectServer(servers, req);
 	if (!req.getValid()) {
 		response = makeResponse(req.getCode());
 		return response;

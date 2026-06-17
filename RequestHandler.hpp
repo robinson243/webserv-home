@@ -28,9 +28,9 @@ HttpResponse makeResponse(int code);
 
 std::set<std::string> defaultAllowedMethodsIfEmpty(std::set<std::string> allow);
 
-int findLocation(ServerConfig server, HttpRequest req);
+int findLocation(const ServerConfig &server, const HttpRequest &req);
 
-std::string concatenatePath(ServerConfig server, HttpRequest req);
+std::string concatenatePath(const ServerConfig &server, const HttpRequest &req);
 
 bool readFileToString(const std::string &path, std::string &content);
 
@@ -46,7 +46,8 @@ HttpResponse Post(const HttpRequest &req, const ServerConfig &server);
 
 void fillDefaultErrorBody(HttpResponse &resp);
 
-ServerConfig selectServer(const std::vector<ServerConfig> &servers, const HttpRequest &req);
+ServerConfig selectServer(const std::vector<ServerConfig> &servers,
+						  const HttpRequest &req);
 
 HttpResponse handleRequest(const HttpRequest &req,
 						   const std::vector<ServerConfig> &servers);
