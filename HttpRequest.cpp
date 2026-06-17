@@ -100,7 +100,8 @@ void HttpRequest::addRequestLine(std::stringstream &str) {
 	}
 	while (s >> token) {
 		if (i == 0) {
-			if (token != "GET" && token != "POST" && token != "DELETE" && token != "HEAD") {
+			if (token != "GET" && token != "POST" && token != "DELETE"
+				&& token != "HEAD") {
 				_code = 501;
 				return;
 			}
@@ -143,10 +144,12 @@ void HttpRequest::addAllHeaders(std::stringstream &str) {
 }
 
 bool HttpRequest::findHostInHeaders() {
-	std::map<std::string, std::string> headers = getHeaders();
-	if (headers["Host"].empty())
-		return false;
-	return true;
+	const std::map<std::string, std::string> &headers = getHeaders();
+
+	std::map<std::string, std::string>::const_iterator it =
+		headers.find("Host");
+
+	return it != headers.end() && !it->second.empty();
 }
 
 bool HttpRequest::isNumber(std::string &e) {
@@ -159,10 +162,11 @@ bool HttpRequest::isNumber(std::string &e) {
 }
 
 bool HttpRequest::validateBody(std::string &e) {
-	std::map<std::string, std::string> headers = getHeaders();
-	std::map<std::string, std::string>::iterator it =
+	const std::map<std::string, std::string> &headers = getHeaders();
+
+	std::map<std::string, std::string>::const_iterator it =
 		headers.find("Content-Length");
-	char *pEnd;
+
 	if (it == headers.end())
 		return true;
 
@@ -170,11 +174,16 @@ bool HttpRequest::validateBody(std::string &e) {
 
 	if (!isNumber(contentLength))
 		return false;
+
+	char *pEnd;
 	long numContentLength = strtol(contentLength.c_str(), &pEnd, 10);
-	if (numContentLength <= 0 || numContentLength != (long)e.length()) {
+
+	if (numContentLength <= 0
+		|| numContentLength != static_cast<long>(e.length())) {
 		_code = 400;
 		return false;
 	}
+
 	return true;
 }
 
