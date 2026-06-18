@@ -6,7 +6,7 @@
 /*   By: oamairi <oamairi@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/04/30 18:32:40 by oamairi           #+#    #+#             */
-/*   Updated: 2026/06/16 15:56:01 by oamairi          ###   ########.fr       */
+/*   Updated: 2026/06/19 00:22:25 by oamairi          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -120,6 +120,11 @@ void	EventLoop::run()
 								int contentLength = std::atoi(_buffers[_fds[i].fd].substr(ligneContentLength + 16).c_str());
 								std::string body = _buffers[_fds[i].fd].substr(_buffers[_fds[i].fd].find("\r\n\r\n") + 4);
 								if (contentLength > 0 && (int) body.size() < contentLength)
+									continue;
+							}
+							else if (_buffers[_fds[i].fd].find("Transfer-Encoding: ") != std::string::npos)
+							{
+								if (_buffers[_fds[i].fd].find("0\r\n\r\n") == std::string::npos)
 									continue;
 							}
 							HttpRequest request;
