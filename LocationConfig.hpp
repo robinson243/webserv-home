@@ -6,7 +6,7 @@
 /*   By: ydembele <ydembele@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/04/14 12:17:03 by romukena          #+#    #+#             */
-/*   Updated: 2026/05/11 15:31:40 by ydembele         ###   ########.fr       */
+/*   Updated: 2026/06/18 15:11:47 by ydembele         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -27,7 +27,7 @@
 	root;
 	retour de reponse ex (200, 201...);
 	cgi_extension ex (.py, .c);
-	allow_methods ex(GET, POST ...);
+	allowed_methods ex(GET, POST ...);
 	upload_path;
 	alias;
 */
@@ -41,7 +41,7 @@
 	index        → ""
 	upload_path  → ""
 	alias        → ""
-	allow_methods → {} (vide)
+	allowed_methods → {} (vide)
 	cgi_extension → {} (vide)
 */
 
@@ -64,7 +64,7 @@ class LocationConfig {
 	std::vector<std::string> _index;
 	std::string _upload_path;
 	std::string _alias;
-	std::set<std::string> _allow_methods;
+	std::set<std::string> _allowed_methods;
 	std::map<std::string, std::string> _cgi_extension;
 
   public:

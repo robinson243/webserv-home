@@ -6,7 +6,7 @@
 /*   By: oamairi <oamairi@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/04/30 18:32:40 by oamairi           #+#    #+#             */
-/*   Updated: 2026/05/14 13:17:31 by oamairi          ###   ########.fr       */
+/*   Updated: 2026/06/16 15:56:01 by oamairi          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -129,6 +129,19 @@ void	EventLoop::run()
 							response = handleRequest(request, _clientFdToConfig[_fds[i].fd]);
 							std::string raw = response.serialize();
 							send(_fds[i].fd, raw.c_str(), raw.size(), 0);
+							
+							std::map<std::string, std::string> headers = response.getHeaders();
+							std::map<std::string, std::string>::iterator connIt = headers.find("Connection");
+							if (connIt != headers.end() && connIt->second == "close")
+							{
+								close(_fds[i].fd);
+								_buffers.erase(_fds[i].fd);
+								_clientFdToConfig.erase(_fds[i].fd);
+								_fds.erase(_fds.begin() + i);
+								i--;
+							}
+							else
+								_buffers[_fds[i].fd].clear();
 						}
 					}
 				}

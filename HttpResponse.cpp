@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   HttpResponse.cpp                                   :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: romukena <romukena@student.42.fr>          +#+  +:+       +#+        */
+/*   By: oamairi <oamairi@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/04/16 14:09:04 by romukena          #+#    #+#             */
-/*   Updated: 2026/05/06 01:43:21 by romukena         ###   ########.fr       */
+/*   Updated: 2026/06/16 16:30:37 by oamairi          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -67,7 +67,7 @@ static std::string codeReturn(int code) {
 		e = "Bad Gateway";
 	else if (code == 504)
 		e = "Gateway Timeout";
-	else 
+	else
 		e = "Unknown";
 	return e;
 }
@@ -76,6 +76,8 @@ void HttpResponse::addCode(int code) {
 	_code = code;
 	_version = "HTTP/1.1";
 	_message = codeReturn(code);
+	if (code >= 300)
+		_headers["Connection"] = "close";
 }
 
 void HttpResponse::addVersion(std::string &e) {
@@ -92,7 +94,7 @@ void HttpResponse::addBodyResponse(std::string &e) {
 
 void HttpResponse::addHeadersResponse(const std::string &key,
 									  const std::string &e) {
-	_headers.insert(std::pair<std::string, std::string>(key, e));
+	_headers[key] = e;
 }
 
 void HttpResponse::setBody(const std::vector<unsigned char> &body) {
@@ -100,17 +102,20 @@ void HttpResponse::setBody(const std::vector<unsigned char> &body) {
 }
 
 std::string HttpResponse::serialize() {
-	std::string final;
-	std::ostringstream oss;
-	oss << _code;
-	final = _version + " " + oss.str() + " " + _message + "\r\n";
-	std::map<std::string, std::string>::iterator it;
-	for (it = _headers.begin(); it != _headers.end(); ++it) {
-		std::string str;
-		str = it->first + ": " + it->second + "\r\n";
-		final += str;
-	}
-	std::string body(_body.begin(), _body.end());
-	final += "\r\n" + body;
-	return final;
+    std::string final;
+    std::string body(_body.begin(), _body.end());
+
+    std::ostringstream lenOss;
+    lenOss << body.size();
+    _headers["Content-Length"] = lenOss.str();
+
+    std::ostringstream oss;
+    oss << _code;
+    final = _version + " " + oss.str() + " " + _message + "\r\n";
+    for (std::map<std::string, std::string>::iterator it = _headers.begin();
+         it != _headers.end(); ++it) {
+        final += it->first + ": " + it->second + "\r\n";
+    }
+    final += "\r\n" + body;
+    return final;
 }

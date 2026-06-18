@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   LocationConfig.cpp                                 :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: ydembele <ydembele@student.42.fr>          +#+  +:+       +#+        */
+/*   By: oamairi <oamairi@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/04/14 13:44:36 by romukena          #+#    #+#             */
-/*   Updated: 2026/05/01 15:50:00 by ydembele         ###   ########.fr       */
+/*   Updated: 2026/06/16 12:41:11 by oamairi          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -54,7 +54,7 @@ LocationConfig parseLocation(std::vector<Token>::iterator &it, std::vector<Token
 		}
 		else if (*it == "autoindex")
     	parseAutoindex(it, end, location);
-		else if (*it == "allow_methods")
+		else if (*it == "allowed_methods")
     	parseAllowMethods(it, end, location);
 		else if (*it == "index")
     	parseIndex(it, end, location);
@@ -182,25 +182,25 @@ void	parseAllowMethods(std::vector<Token>::iterator &it, std::vector<Token>::ite
 	const std::set<std::string> tmp = location.getAllowMethods();
 
 	if (!tmp.empty())
-		throw std::runtime_error("Multiple definition of allow_methods");
+		throw std::runtime_error("Multiple definition of allowed_methods");
 	++it;
 	if (it == end)
-		throw std::runtime_error("allow_methods: missing value");
+		throw std::runtime_error("allowed_methods: missing value");
 	while (it != end && (*it != ";" && !it->in_quotes))
 	{
 		if (*it == "}" || *it == "{")
-			throw std::runtime_error("allow_methods: brace in name forbidden");
+			throw std::runtime_error("allowed_methods: brace in name forbidden");
 		if (*it != "GET" && *it != "POST" && *it != "DELETE")
-			throw std::runtime_error("allow_methods: invalid value " + it->value);
+			throw std::runtime_error("allowed_methods: invalid value " + it->value);
 		if (!location.isMethodAllowed(it->value))
-			throw std::runtime_error("allow_methods: Multiple same method");
+			throw std::runtime_error("allowed_methods: Multiple same method");
 		allowmethod.insert(it->value);
 		++it;
 	}
 	if (it == end)
-		throw std::runtime_error("allow_methods: unterminated directive");
+		throw std::runtime_error("allowed_methods: unterminated directive");
 	if (allowmethod.empty())
-		throw std::runtime_error("allow_methods: no names provided");
+		throw std::runtime_error("allowed_methods: no names provided");
 	++it;
 	location.setAllowMethods(allowmethod);
 }
@@ -300,7 +300,7 @@ const std::string &LocationConfig::getAlias() const {
 	return _alias;
 }
 const std::set<std::string> &LocationConfig::getAllowMethods() const {
-	return _allow_methods;
+	return _allowed_methods;
 }
 const std::map<std::string, std::string> &
 LocationConfig::getCgiExtension() const {
@@ -349,7 +349,7 @@ void LocationConfig::setAlias(const std::string &v) {
 	_alias = v;
 }
 void LocationConfig::setAllowMethods(const std::set<std::string> &v) {
-	_allow_methods = v;
+	_allowed_methods = v;
 }
 void LocationConfig::setCgiExtension(
 	const std::map<std::string, std::string> &v) {
@@ -358,7 +358,7 @@ void LocationConfig::setCgiExtension(
 
 // ── Helpers ───────────────────────────────────────────────────
 void LocationConfig::addMethod(const std::string &method) {
-	_allow_methods.insert(method);
+	_allowed_methods.insert(method);
 }
 
 void LocationConfig::addCgiExtension(const std::string &ext, const std::string &interpreter)
@@ -369,9 +369,9 @@ void LocationConfig::addCgiExtension(const std::string &ext, const std::string &
 }
 
 bool LocationConfig::isMethodAllowed(const std::string &method) const {
-	if (_allow_methods.empty())
+	if (_allowed_methods.empty())
 		return true;
-	return _allow_methods.find(method) != _allow_methods.end();
+	return _allowed_methods.find(method) != _allowed_methods.end();
 }
 
 bool LocationConfig::hasCgi(const std::string &ext) const {
@@ -420,7 +420,7 @@ std::ostream &operator<<(std::ostream &os, const LocationConfig &loc)
 
 	if (!loc.getAllowMethods().empty())
 	{
-		os << "allow_methods: ";
+		os << "allowed_methods: ";
 		for (std::set<std::string>::const_iterator it = loc.getAllowMethods().begin();
 			 it != loc.getAllowMethods().end(); ++it)
 			os << *it << " ";

@@ -2,7 +2,8 @@
 #include "RequestHandler.hpp"
 #include "ServerConfig.hpp"
 
-bool isCgiRequest(const HttpRequest &req, const LocationConfig &loc) {
+bool isCgiRequest(const HttpRequest &req, const LocationConfig &loc)
+{
 	std::string uri = req.getRequest().at("uri");
 	std::string cgiFile;
 	std::string ext;
@@ -13,12 +14,14 @@ bool isCgiRequest(const HttpRequest &req, const LocationConfig &loc) {
 		cgiFile = uri.substr(0, pos);
 
 	size_t postExt = cgiFile.find_last_of(".");
-	if (postExt != std::string::npos) {
+	if (postExt != std::string::npos)
+	{
 		ext = cgiFile.substr(postExt);
 		std::map<std::string, std::string>::const_iterator it;
 		for (it = loc.getCgiExtension().begin();
 			 it != loc.getCgiExtension().end();
-			 ++it) {
+			 ++it)
+		{
 			if (it->first == ext)
 				return true;
 		}
@@ -26,7 +29,8 @@ bool isCgiRequest(const HttpRequest &req, const LocationConfig &loc) {
 	return false;
 }
 
-HttpResponse parseCgiOutput(const std::vector<unsigned char> &output) {
+HttpResponse parseCgiOutput(const std::vector<unsigned char> &output)
+{
 	// Convertir en string pour trouver la séparation headers/body
 	std::string raw(output.begin(), output.end());
 
@@ -35,7 +39,8 @@ HttpResponse parseCgiOutput(const std::vector<unsigned char> &output) {
 	size_t sepPos = raw.find(sep);
 
 	// fallback si le CGI utilise \n\n au lieu de \r\n\r\n
-	if (sepPos == std::string::npos) {
+	if (sepPos == std::string::npos)
+	{
 		sep = "\n\n";
 		sepPos = raw.find(sep);
 	}
@@ -52,7 +57,8 @@ HttpResponse parseCgiOutput(const std::vector<unsigned char> &output) {
 	std::string line;
 	std::istringstream stream(headerSection);
 
-	while (std::getline(stream, line)) {
+	while (std::getline(stream, line))
+	{
 		// Supprimer le \r si présent
 		if (!line.empty() && line[line.size() - 1] == '\r')
 			line.erase(line.size() - 1);
@@ -71,11 +77,14 @@ HttpResponse parseCgiOutput(const std::vector<unsigned char> &output) {
 			value = value.substr(1);
 
 		// Header spécial CGI : Status -> code HTTP
-		if (key == "Status") {
+		if (key == "Status")
+		{
 			// "Status: 200 OK" -> extraire 200
 			std::istringstream ss(value);
 			ss >> code;
-		} else {
+		}
+		else
+		{
 			r.addHeadersResponse(key, value);
 		}
 	}
@@ -94,7 +103,8 @@ HttpResponse parseCgiOutput(const std::vector<unsigned char> &output) {
 	return r;
 }
 
-void freeEnvp(char **envp, size_t size) {
+void freeEnvp(char **envp, size_t size)
+{
 	for (size_t i = 0; i < size; ++i)
 		delete[] envp[i];
 	delete[] envp;
@@ -102,7 +112,8 @@ void freeEnvp(char **envp, size_t size) {
 
 HttpResponse handleCgi(const HttpRequest &req,
 					   const LocationConfig &loc,
-					   const std::string &ext) {
+					   const std::string &ext)
+{
 	std::string REQUEST_METHOD = req.getRequest().at("method");
 	std::string interpretor = loc.getCgiExtension().at(ext);
 	std::string SCRIPT_NAME;
@@ -128,20 +139,22 @@ HttpResponse handleCgi(const HttpRequest &req,
 	envpVec.push_back("CONTENT_LENGTH=" + CONTENT_LENGTH);
 	envpVec.push_back("SCRIPT_NAME=" + SCRIPT_NAME);
 
-	if (!loc.getPath().empty()) {
+	if (!loc.getPath().empty())
+	{
 		bool isPrefix =
-			SCRIPT_NAME.size() >= loc.getPath().size()
-			&& SCRIPT_NAME.compare(0, loc.getPath().size(), loc.getPath()) == 0;
+			SCRIPT_NAME.size() >= loc.getPath().size() && SCRIPT_NAME.compare(0, loc.getPath().size(), loc.getPath()) == 0;
 
-		bool hasValidBoundary = SCRIPT_NAME.size() == loc.getPath().size()
-								|| SCRIPT_NAME[loc.getPath().size()] == '/';
-		if (isPrefix && hasValidBoundary) {
-			if (!loc.getAlias().empty()) {
+		bool hasValidBoundary = SCRIPT_NAME.size() == loc.getPath().size() || SCRIPT_NAME[loc.getPath().size()] == '/';
+		if (isPrefix && hasValidBoundary)
+		{
+			if (!loc.getAlias().empty())
+			{
 				scriptPath += loc.getAlias();
 				scriptPath += SCRIPT_NAME.substr(loc.getPath().size());
 			}
 
-			else {
+			else
+			{
 				scriptPath += loc.getRoot();
 				scriptPath += SCRIPT_NAME;
 			}
@@ -150,15 +163,16 @@ HttpResponse handleCgi(const HttpRequest &req,
 	if (scriptPath.empty())
 		return makeResponse(500);
 	char **envp = new char *[envpVec.size() + 1];
-	for (size_t i = 0; i < envpVec.size(); ++i) {
+	for (size_t i = 0; i < envpVec.size(); ++i)
+	{
 		envp[i] = new char[envpVec[i].size() + 1];
 		strcpy(envp[i], envpVec[i].c_str());
 	}
 	envp[envpVec.size()] = NULL;
 
-	char *argv[] = { (char *)interpretor.c_str(),
-					 (char *)scriptPath.c_str(),
-					 NULL };
+	char *argv[] = {(char *)interpretor.c_str(),
+					(char *)scriptPath.c_str(),
+					NULL};
 	int pipefdIn[2];
 	int pipefdOut[2];
 	pid_t pid;
@@ -166,23 +180,29 @@ HttpResponse handleCgi(const HttpRequest &req,
 	if (pipe(pipefdIn) == -1)
 		return freeEnvp(envp, envpVec.size()), makeResponse(500);
 
-	if (pipe(pipefdOut) == -1) {
+	if (pipe(pipefdOut) == -1)
+	{
 		close(pipefdIn[0]);
 		close(pipefdIn[1]);
 		return freeEnvp(envp, envpVec.size()), makeResponse(500);
 	}
 
 	pid = fork();
-	if (pid == -1) {
+	if (pid == -1)
+	{
 		close(pipefdIn[0]);
 		close(pipefdIn[1]);
 		close(pipefdOut[0]);
 		close(pipefdOut[1]);
 		return freeEnvp(envp, envpVec.size()), makeResponse(500);
 	}
+	int saved_stdin = dup(STDIN_FILENO);
+	int saved_stdout = dup(STDOUT_FILENO);
 
-	if (pid == 0) {
-		if (dup2(pipefdIn[0], STDIN_FILENO) == -1) {
+	if (pid == 0)
+	{
+		if (dup2(pipefdIn[0], STDIN_FILENO) == -1)
+		{
 			close(pipefdIn[0]);
 			close(pipefdIn[1]);
 			close(pipefdOut[0]);
@@ -190,7 +210,8 @@ HttpResponse handleCgi(const HttpRequest &req,
 			_exit(1);
 		}
 
-		if (dup2(pipefdOut[1], STDOUT_FILENO) == -1) {
+		if (dup2(pipefdOut[1], STDOUT_FILENO) == -1)
+		{
 			close(pipefdIn[0]);
 			close(pipefdIn[1]);
 			close(pipefdOut[0]);
@@ -211,16 +232,22 @@ HttpResponse handleCgi(const HttpRequest &req,
 	close(pipefdOut[1]);
 	/* Parent */
 	const std::string &method = req.getRequest().at("method");
-	if (method == "POST" && !req.getBody().empty()) {
+	if (method == "POST" && !req.getBody().empty())
+	{
 		const std::vector<unsigned char> &body = req.getBody();
 		ssize_t written = write(pipefdIn[1],
 								reinterpret_cast<const char *>(body.data()),
 								body.size());
-		if (written == -1) {
+		if (written == -1)
+		{
 			close(pipefdIn[1]);
 			close(pipefdOut[0]);
 			kill(pid, SIGKILL);
 			waitpid(pid, NULL, 0);
+			dup2(saved_stdin, STDIN_FILENO);   // ← manquait
+			dup2(saved_stdout, STDOUT_FILENO); // ← manquait
+			close(saved_stdin);				   // ← manquait
+			close(saved_stdout);			   // ← manquait
 			return freeEnvp(envp, envpVec.size()), makeResponse(500);
 		}
 	}
@@ -232,19 +259,30 @@ HttpResponse handleCgi(const HttpRequest &req,
 	time_t start = time(NULL);
 	const int CGI_TIMEOUT = 5;
 
-	while (true) {
-		if (time(NULL) - start > CGI_TIMEOUT) {
+	while (true)
+	{
+		if (time(NULL) - start > CGI_TIMEOUT)
+		{
 			close(pipefdOut[0]);
 			kill(pid, SIGKILL);
 			waitpid(pid, NULL, 0);
+			dup2(saved_stdin, STDIN_FILENO);   // ← manquait
+			dup2(saved_stdout, STDOUT_FILENO); // ← manquait
+			close(saved_stdin);				   // ← manquait
+			close(saved_stdout);			   // ← manquait
 			return freeEnvp(envp, envpVec.size()), makeResponse(504);
 		}
 
 		n = read(pipefdOut[0], buf, sizeof(buf));
-		if (n == -1) {
+		if (n == -1)
+		{
 			close(pipefdOut[0]);
 			kill(pid, SIGKILL);
 			waitpid(pid, NULL, 0);
+			dup2(saved_stdin, STDIN_FILENO);   // ← manquait
+			dup2(saved_stdout, STDOUT_FILENO); // ← manquait
+			close(saved_stdin);				   // ← manquait
+			close(saved_stdout);			   // ← manquait
 			return freeEnvp(envp, envpVec.size()), makeResponse(500);
 		}
 		if (n == 0)
@@ -258,6 +296,11 @@ HttpResponse handleCgi(const HttpRequest &req,
 	waitpid(pid, &status, 0);
 
 	freeEnvp(envp, envpVec.size());
+
+	dup2(saved_stdin, STDIN_FILENO);
+	dup2(saved_stdout, STDOUT_FILENO);
+	close(saved_stdin);
+	close(saved_stdout);
 
 	if (WIFEXITED(status) && WEXITSTATUS(status) != 0)
 		return makeResponse(502);
