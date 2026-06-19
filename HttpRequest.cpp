@@ -6,7 +6,7 @@
 /*   By: mknroro <mknroro@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/04/14 15:16:54 by romukena          #+#    #+#             */
-/*   Updated: 2026/06/19 01:08:37 by mknroro          ###   ########.fr       */
+/*   Updated: 2026/06/19 22:41:49 by mknroro          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -202,19 +202,18 @@ bool HttpRequest::isChunked() const
 
 bool HttpRequest::validateBody(std::string &e)
 {
+	// Si chunked, le body est déjà décodé, pas besoin de vérifier Content-Length
 	if (isChunked())
 		return true;
 
 	const std::map<std::string, std::string> &headers = getHeaders();
+	std::map<std::string, std::string>::const_iterator it = headers.find("Content-Length");
 
-	std::map<std::string, std::string>::const_iterator it =
-		headers.find("Content-Length");
-
+	// Pas de Content-Length = pas de body attendu, c'est OK
 	if (it == headers.end())
 		return true;
 
 	std::string contentLength = it->second;
-
 	if (!isNumber(contentLength))
 		return false;
 
@@ -233,24 +232,81 @@ bool HttpRequest::validateBody(std::string &e)
 	return true;
 }
 
+std::string HttpRequest::decodeChunkedBody(std::stringstream &str)
+{
+	std::string result;
+	std::string sizeLine;
+
+	while (std::getline(str, sizeLine))
+	{
+		// Nettoyer le \r éventuel
+		if (!sizeLine.empty() && sizeLine[sizeLine.size() - 1] == '\r')
+			sizeLine.erase(sizeLine.size() - 1);
+
+		if (sizeLine.empty())
+			continue;
+
+		// Convertir la taille hexadécimale
+		char *pEnd;
+		long chunkSize = strtol(sizeLine.c_str(), &pEnd, 16);
+
+		// Chunk terminal
+		if (chunkSize == 0)
+			break;
+
+		// Lire exactement chunkSize octets
+		std::string chunkData(chunkSize, '\0');
+		str.read(&chunkData[0], chunkSize);
+		result += chunkData;
+
+		// Consommer le \r\n après le chunk
+		std::string crlf;
+		std::getline(str, crlf);
+	}
+	return result;
+}
+
 void HttpRequest::addHttpRequest(std::string &req)
 {
 	std::stringstream str(req);
 	addRequestLine(str);
+	if (_code != -1)
+		return;
+
 	addAllHeaders(str);
+	if (_code != -1)
+		return;
+
 	if (!findHostInHeaders())
 	{
 		_code = 400;
 		return;
 	}
-	std::string line;
-	std::getline(str, line);
-	if (!validateBody(line))
+
+	// Consommer la ligne vide séparant headers et body
+	std::string emptyLine;
+	std::getline(str, emptyLine);
+
+	std::string body;
+	if (isChunked())
+	{
+		body = decodeChunkedBody(str);
+	}
+	else
+	{
+		// Lire tout le reste du stream
+		std::ostringstream oss;
+		oss << str.rdbuf();
+		body = oss.str();
+	}
+
+	if (!validateBody(body))
 	{
 		_code = 400;
 		return;
 	}
-	addBody(line);
+
+	addBody(body);
 	if (_code == -1)
 	{
 		_code = 200;
