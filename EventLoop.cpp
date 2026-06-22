@@ -6,7 +6,7 @@
 /*   By: oamairi <oamairi@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/04/30 18:32:40 by oamairi           #+#    #+#             */
-/*   Updated: 2026/06/19 00:22:25 by oamairi          ###   ########.fr       */
+/*   Updated: 2026/06/22 15:51:03 by oamairi          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -54,6 +54,10 @@ bool	EventLoop::isServerFd(int fd)
 
 void	EventLoop::run()
 {
+	int	z = 0;
+	int	a = 0;
+	int	bufferSize = 0;
+
 	while (_run)
 	{
 		if (poll(_fds.data(), _fds.size(), -1) == -1)
@@ -111,22 +115,29 @@ void	EventLoop::run()
 					}
 					else
 					{
+						/*a++;
+						std::cerr << "Nombre d'iteration dans recv : " << a << "\n";*/
+						bufferSize = _buffers[_fds[i].fd].size();
+						if (bufferSize > 4)
+							bufferSize = bufferSize - 4;
 						_buffers[_fds[i].fd].append(buffer, read);
-						if (_buffers[_fds[i].fd].find("\r\n\r\n") != std::string::npos)
+						if (_buffers[_fds[i].fd].find("\r\n\r\n", bufferSize) != std::string::npos)
 						{
-							if (_buffers[_fds[i].fd].find("Content-Length: ") != std::string::npos)
+							if (_buffers[_fds[i].fd].find("Content-Length: ", bufferSize) != std::string::npos)
 							{
-								int ligneContentLength = _buffers[_fds[i].fd].find("Content-Length: ");
+								int ligneContentLength = _buffers[_fds[i].fd].find("Content-Length: ", bufferSize);
 								int contentLength = std::atoi(_buffers[_fds[i].fd].substr(ligneContentLength + 16).c_str());
-								std::string body = _buffers[_fds[i].fd].substr(_buffers[_fds[i].fd].find("\r\n\r\n") + 4);
+								std::string body = _buffers[_fds[i].fd].substr(_buffers[_fds[i].fd].find("\r\n\r\n", bufferSize) + 4);
 								if (contentLength > 0 && (int) body.size() < contentLength)
 									continue;
 							}
-							else if (_buffers[_fds[i].fd].find("Transfer-Encoding: ") != std::string::npos)
+							else if (_buffers[_fds[i].fd].find("Transfer-Encoding: ", bufferSize) != std::string::npos)
 							{
-								if (_buffers[_fds[i].fd].find("0\r\n\r\n") == std::string::npos)
+								if (_buffers[_fds[i].fd].find("0\r\n\r\n", bufferSize) == std::string::npos)
 									continue;
 							}
+							/*z++;
+							std::cerr << "Nombre d'appelle de addHttpRequest : " << z << "\n";*/
 							HttpRequest request;
 							request.addHttpRequest(_buffers[_fds[i].fd]);
 							_buffers[_fds[i].fd].clear();
@@ -134,7 +145,6 @@ void	EventLoop::run()
 							response = handleRequest(request, _clientFdToConfig[_fds[i].fd]);
 							std::string raw = response.serialize();
 							send(_fds[i].fd, raw.c_str(), raw.size(), 0);
-							
 							std::map<std::string, std::string> headers = response.getHeaders();
 							std::map<std::string, std::string>::iterator connIt = headers.find("Connection");
 							if (connIt != headers.end() && connIt->second == "close")
