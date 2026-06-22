@@ -495,10 +495,27 @@ HttpResponse Post(const HttpRequest &req, const ServerConfig &server) {
 
 	const LocationConfig &loc = locations[valLocation];
 
-	size_t maxBody = server.getBodySizeClient();
-	size_t contentLength = req.getBody().size();
-	if (maxBody != 0 && !loc.gethasmaxsize() && contentLength > maxBody)
-		return makeResponse(413);
+	size_t effectiveMaxBody = server.getBodySizeClient();
+	if (loc.gethasmaxsize())
+		effectiveMaxBody = loc.getMaxBody();
+
+	std::map<std::string, std::string> headers = req.getHeaders();
+
+	if (effectiveMaxBody != 0) {
+		std::map<std::string, std::string>::iterator it =
+			headers.find("Content-Length");
+
+		if (it != headers.end()) {
+			std::istringstream iss(it->second);
+			size_t announcedSize = 0;
+			iss >> announcedSize;
+			if (!iss.fail() && announcedSize > effectiveMaxBody)
+				return makeResponse(413);
+		}
+
+		if (req.getBody().size() > effectiveMaxBody)
+			return makeResponse(413);
+	}
 
 	if (loc.hasRedirect()) {
 		HttpResponse resp;
@@ -508,7 +525,6 @@ HttpResponse Post(const HttpRequest &req, const ServerConfig &server) {
 	}
 
 	std::vector<unsigned char> body = req.getBody();
-	std::map<std::string, std::string> headers = req.getHeaders();
 
 	if (body.empty()) {
 		response = makeResponse(400);
@@ -526,9 +542,6 @@ HttpResponse Post(const HttpRequest &req, const ServerConfig &server) {
 		response = makeResponse(400);
 		return response;
 	}
-
-	if (loc.gethasmaxsize() && body.size() > loc.getMaxBody())
-		return makeResponse(413);
 
 	std::map<std::string, std::string> r = req.getRequest();
 	std::string uri = r["uri"];
@@ -548,6 +561,7 @@ HttpResponse Post(const HttpRequest &req, const ServerConfig &server) {
 		response = makeResponse(400);
 		return response;
 	}
+
 	if (filename.find("..") != std::string::npos
 		|| filename.find("%2e%2e") != std::string::npos
 		|| filename.find("%2E%2E") != std::string::npos
@@ -582,6 +596,7 @@ HttpResponse Post(const HttpRequest &req, const ServerConfig &server) {
 		response = makeResponse(500);
 		return response;
 	}
+
 	file.close();
 	response = makeResponse(201);
 	return response;

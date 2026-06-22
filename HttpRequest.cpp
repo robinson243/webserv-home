@@ -13,61 +13,49 @@
 #include "HttpRequest.hpp"
 #include <cstdlib>
 
-HttpRequest::HttpRequest() : _isValid(false), _code(-1)
-{
+HttpRequest::HttpRequest() : _isValid(false), _code(-1) {
 }
 
-HttpRequest::~HttpRequest()
-{
+HttpRequest::~HttpRequest() {
 }
 
-int HttpRequest::getCode() const
-{
+int HttpRequest::getCode() const {
 	return _code;
 }
 
-std::vector<unsigned char> HttpRequest::getBody() const
-{
+std::vector<unsigned char> HttpRequest::getBody() const {
 	return _body;
 }
 
-bool HttpRequest::getValid() const
-{
+bool HttpRequest::getValid() const {
 	return _isValid;
 }
 
-const std::map<std::string, std::string> &HttpRequest::getHeaders() const
-{
+const std::map<std::string, std::string> &HttpRequest::getHeaders() const {
 	return _headers;
 }
 
-const std::map<std::string, std::string> &HttpRequest::getRequest() const
-{
+const std::map<std::string, std::string> &HttpRequest::getRequest() const {
 	return _requestLine;
 }
 
-void HttpRequest::addBody(std::string &element)
-{
+void HttpRequest::addBody(std::string &element) {
 	_body.insert(_body.end(), element.begin(), element.end());
 }
 
-void HttpRequest::makeTrue()
-{
+void HttpRequest::makeTrue() {
 	_isValid = true;
 }
 
-void HttpRequest::addHeaders(const std::string &key, std::string &element)
-{
+void HttpRequest::addHeaders(const std::string &key, std::string &element) {
 	_headers.insert(std::pair<std::string, std::string>(key, element));
 }
 
-void HttpRequest::addRequest(const std::string &key, std::string &element)
-{
+void HttpRequest::addRequest(const std::string &key, std::string &element) {
 	_requestLine.insert(std::pair<std::string, std::string>(key, element));
 }
 
-void HttpRequest::print() const
-{
+void HttpRequest::print() const {
 	std::cout << "=== REQUEST LINE ===" << std::endl;
 	for (std::map<std::string, std::string>::const_iterator it =
 			 _requestLine.begin();
@@ -90,47 +78,38 @@ void HttpRequest::print() const
 	std::cout << "valid: " << _isValid << std::endl;
 }
 
-size_t HttpRequest::requestLength(std::string &e)
-{
+size_t HttpRequest::requestLength(std::string &e) {
 	std::stringstream str(e);
 	std::string token;
 	size_t i = 0;
-	while (str >> token)
-	{
+	while (str >> token) {
 		i++;
 	}
 	return i;
 }
 
-void HttpRequest::addRequestLine(std::stringstream &str)
-{
+void HttpRequest::addRequestLine(std::stringstream &str) {
 	std::string line;
 	std::getline(str, line);
 	std::stringstream s(line);
 	std::string token;
 	size_t i = 0;
-	if (requestLength(line) != 3)
-	{
+	if (requestLength(line) != 3) {
 		_code = 400;
 		return;
 	}
-	while (s >> token)
-	{
-		if (i == 0)
-		{
-			if (token != "GET" && token != "POST" && token != "DELETE" && token != "HEAD")
-			{
+	while (s >> token) {
+		if (i == 0) {
+			if (token != "GET" && token != "POST" && token != "DELETE"
+				&& token != "HEAD") {
 				_code = 501;
 				return;
 			}
 			addRequest("method", token);
-		}
-		else if (i == 1)
+		} else if (i == 1)
 			addRequest("uri", token);
-		else if (i == 2)
-		{
-			if (token != "HTTP/1.1")
-			{
+		else if (i == 2) {
+			if (token != "HTTP/1.1") {
 				_code = 505;
 				return;
 			}
@@ -140,8 +119,7 @@ void HttpRequest::addRequestLine(std::stringstream &str)
 	}
 }
 
-void HttpRequest::substractAndAdd(std::string &line)
-{
+void HttpRequest::substractAndAdd(std::string &line) {
 	std::stringstream s(line);
 	std::string key;
 	std::string value;
@@ -151,15 +129,13 @@ void HttpRequest::substractAndAdd(std::string &line)
 	addHeaders(sub, value);
 }
 
-void HttpRequest::addAllHeaders(std::stringstream &str)
-{
+void HttpRequest::addAllHeaders(std::stringstream &str) {
 	std::string token;
-	while (std::getline(str, token))
-	{
+	while (std::getline(str, token)) {
 		if (token == "\r")
 			break;
-		if (token.find(":") == std::string::npos || token.find(":") == 0 || token.empty())
-		{
+		if (token.find(":") == std::string::npos || token.find(":") == 0
+			|| token.empty()) {
 			_code = 400;
 			return;
 		}
@@ -167,8 +143,7 @@ void HttpRequest::addAllHeaders(std::stringstream &str)
 	}
 }
 
-bool HttpRequest::findHostInHeaders()
-{
+bool HttpRequest::findHostInHeaders() {
 	const std::map<std::string, std::string> &headers = getHeaders();
 
 	std::map<std::string, std::string>::const_iterator it =
@@ -177,20 +152,16 @@ bool HttpRequest::findHostInHeaders()
 	return it != headers.end() && !it->second.empty();
 }
 
-bool HttpRequest::isNumber(std::string &e)
-{
-	for (size_t i = 0; e[i]; i++)
-	{
-		if (!isdigit(e[i]))
-		{
+bool HttpRequest::isNumber(std::string &e) {
+	for (size_t i = 0; e[i]; i++) {
+		if (!isdigit(e[i])) {
 			return false;
 		}
 	}
 	return true;
 }
 
-bool HttpRequest::isChunked() const
-{
+bool HttpRequest::isChunked() const {
 	std::map<std::string, std::string>::const_iterator it =
 		_headers.find("Transfer-Encoding");
 
@@ -200,14 +171,15 @@ bool HttpRequest::isChunked() const
 	return it->second == "chunked";
 }
 
-bool HttpRequest::validateBody(std::string &e)
-{
-	// Si chunked, le body est déjà décodé, pas besoin de vérifier Content-Length
+bool HttpRequest::validateBody(std::string &e) {
+	// Si chunked, le body est déjà décodé, pas besoin de vérifier
+	// Content-Length
 	if (isChunked())
 		return true;
 
 	const std::map<std::string, std::string> &headers = getHeaders();
-	std::map<std::string, std::string>::const_iterator it = headers.find("Content-Length");
+	std::map<std::string, std::string>::const_iterator it =
+		headers.find("Content-Length");
 
 	// Pas de Content-Length = pas de body attendu, c'est OK
 	if (it == headers.end())
@@ -220,8 +192,7 @@ bool HttpRequest::validateBody(std::string &e)
 	char *pEnd;
 	long numContentLength = strtol(contentLength.c_str(), &pEnd, 10);
 
-	if (numContentLength < 0)
-	{
+	if (numContentLength < 0) {
 		_code = 400;
 		return false;
 	}
@@ -232,13 +203,11 @@ bool HttpRequest::validateBody(std::string &e)
 	return true;
 }
 
-std::string HttpRequest::decodeChunkedBody(std::stringstream &str)
-{
+std::string HttpRequest::decodeChunkedBody(std::stringstream &str) {
 	std::string result;
 	std::string sizeLine;
 
-	while (std::getline(str, sizeLine))
-	{
+	while (std::getline(str, sizeLine)) {
 		// Nettoyer le \r éventuel
 		if (!sizeLine.empty() && sizeLine[sizeLine.size() - 1] == '\r')
 			sizeLine.erase(sizeLine.size() - 1);
@@ -266,8 +235,7 @@ std::string HttpRequest::decodeChunkedBody(std::stringstream &str)
 	return result;
 }
 
-void HttpRequest::addHttpRequest(std::string &req)
-{
+void HttpRequest::addHttpRequest(std::string &req) {
 	std::stringstream str(req);
 	addRequestLine(str);
 	if (_code != -1)
@@ -277,38 +245,28 @@ void HttpRequest::addHttpRequest(std::string &req)
 	if (_code != -1)
 		return;
 
-	if (!findHostInHeaders())
-	{
+	if (!findHostInHeaders()) {
 		_code = 400;
 		return;
 	}
 
-	// Consommer la ligne vide séparant headers et body
-	std::string emptyLine;
-	std::getline(str, emptyLine);
-
 	std::string body;
-	if (isChunked())
-	{
+	if (isChunked()) {
 		body = decodeChunkedBody(str);
-	}
-	else
-	{
+	} else {
 		// Lire tout le reste du stream
 		std::ostringstream oss;
 		oss << str.rdbuf();
 		body = oss.str();
 	}
 
-	if (!validateBody(body))
-	{
+	if (!validateBody(body)) {
 		_code = 400;
 		return;
 	}
 
 	addBody(body);
-	if (_code == -1)
-	{
+	if (_code == -1) {
 		_code = 200;
 		makeTrue();
 	}
