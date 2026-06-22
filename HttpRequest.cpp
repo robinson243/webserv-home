@@ -187,21 +187,91 @@ bool HttpRequest::validateBody(std::string &e) {
 	return true;
 }
 
+bool HttpRequest::isChunked() const {
+	std::map<std::string, std::string>::const_iterator it =
+		_headers.find("Transfer-Encoding");
+	return it != _headers.end() && it->second == "chunked";
+}
+
+bool HttpRequest::decodeChunkedBody(std::stringstream &str) {
+	std::string line;
+
+	while (std::getline(str, line)) {
+		// Retire le \r éventuel en fin de ligne
+		if (!line.empty() && line[line.size() - 1] == '\r')
+			line.erase(line.size() - 1);
+
+		// Ignore les extensions de chunk (tout ce qui suit un ';')
+		size_t semicolon = line.find(';');
+		if (semicolon != std::string::npos)
+			line = line.substr(0, semicolon);
+
+		if (line.empty()) {
+			_code = 400;
+			return false;
+		}
+
+		// Convertit la taille hexadécimale en entier
+		char *pEnd;
+		long chunkSize = strtol(line.c_str(), &pEnd, 16);
+
+		if (*pEnd != '\0' || chunkSize < 0) {
+			_code = 400;
+			return false;
+		}
+
+		// Chunk final
+		if (chunkSize == 0)
+			return true;
+
+		// Lit exactement chunkSize octets
+		std::vector<char> buf(chunkSize);
+		if (!str.read(&buf[0], chunkSize)) {
+			_code = 400;
+			return false;
+		}
+		_body.insert(_body.end(), buf.begin(), buf.end());
+
+		// Consomme le \r\n qui suit les données du chunk
+		std::string crlf;
+		std::getline(str, crlf);
+	}
+
+	// On n'a jamais trouvé le chunk final "0\r\n"
+	_code = 400;
+	return false;
+}
+
 void HttpRequest::addHttpRequest(std::string &req) {
 	std::stringstream str(req);
 	addRequestLine(str);
+	if (_code != -1)
+		return;
+
 	addAllHeaders(str);
+	if (_code != -1)
+		return;
+
 	if (!findHostInHeaders()) {
 		_code = 400;
 		return;
 	}
-	std::string line;
-	std::getline(str, line);
-	if (!validateBody(line)) {
-		_code = 400;
-		return;
+
+	// Consomme la ligne vide séparant headers et body
+	std::string blank;
+	std::getline(str, blank);
+
+	if (isChunked()) {
+		if (!decodeChunkedBody(str))
+			return;
+	} else {
+		std::string line;
+		std::getline(str, line);
+		if (!validateBody(line))
+			return;
+		addBody(line);
 	}
-	addBody(line);
+
 	if (_code == -1) {
 		_code = 200;
 		makeTrue();

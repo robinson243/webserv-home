@@ -56,7 +56,8 @@ class HttpRequest {
 	const std::map<std::string, std::string> &getRequest() const;
 	const std::map<std::string, std::string> &getHeaders() const;
 	void print() const;
-
+	bool isChunked() const;
+	bool decodeChunkedBody(std::stringstream &str);
 	void addBody(std::string &element);
 	void makeTrue();
 	void addHeaders(const std::string &key, std::string &element);
