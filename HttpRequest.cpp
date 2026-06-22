@@ -232,62 +232,42 @@ bool HttpRequest::validateBody(std::string &e)
 	return true;
 }
 
-bool HttpRequest::isChunked() const {
-	std::map<std::string, std::string>::const_iterator it =
-		_headers.find("Transfer-Encoding");
-	return it != _headers.end() && it->second == "chunked";
-}
+std::string HttpRequest::decodeChunkedBody(std::stringstream &str)
+{
+	std::string result;
+	std::string sizeLine;
 
-bool HttpRequest::decodeChunkedBody(std::stringstream &str) {
-	std::string line;
+	while (std::getline(str, sizeLine))
+	{
+		// Nettoyer le \r éventuel
+		if (!sizeLine.empty() && sizeLine[sizeLine.size() - 1] == '\r')
+			sizeLine.erase(sizeLine.size() - 1);
 
-	while (std::getline(str, line)) {
-		// Retire le \r éventuel en fin de ligne
-		if (!line.empty() && line[line.size() - 1] == '\r')
-			line.erase(line.size() - 1);
+		if (sizeLine.empty())
+			continue;
 
-		// Ignore les extensions de chunk (tout ce qui suit un ';')
-		size_t semicolon = line.find(';');
-		if (semicolon != std::string::npos)
-			line = line.substr(0, semicolon);
-
-		if (line.empty()) {
-			_code = 400;
-			return false;
-		}
-
-		// Convertit la taille hexadécimale en entier
+		// Convertir la taille hexadécimale
 		char *pEnd;
-		long chunkSize = strtol(line.c_str(), &pEnd, 16);
+		long chunkSize = strtol(sizeLine.c_str(), &pEnd, 16);
 
-		if (*pEnd != '\0' || chunkSize < 0) {
-			_code = 400;
-			return false;
-		}
-
-		// Chunk final
+		// Chunk terminal
 		if (chunkSize == 0)
-			return true;
+			break;
 
-		// Lit exactement chunkSize octets
-		std::vector<char> buf(chunkSize);
-		if (!str.read(&buf[0], chunkSize)) {
-			_code = 400;
-			return false;
-		}
-		_body.insert(_body.end(), buf.begin(), buf.end());
+		// Lire exactement chunkSize octets
+		std::string chunkData(chunkSize, '\0');
+		str.read(&chunkData[0], chunkSize);
+		result += chunkData;
 
-		// Consomme le \r\n qui suit les données du chunk
+		// Consommer le \r\n après le chunk
 		std::string crlf;
 		std::getline(str, crlf);
 	}
-
-	// On n'a jamais trouvé le chunk final "0\r\n"
-	_code = 400;
-	return false;
+	return result;
 }
 
-void HttpRequest::addHttpRequest(std::string &req) {
+void HttpRequest::addHttpRequest(std::string &req)
+{
 	std::stringstream str(req);
 	addRequestLine(str);
 	if (_code != -1)
@@ -297,27 +277,38 @@ void HttpRequest::addHttpRequest(std::string &req) {
 	if (_code != -1)
 		return;
 
-	if (!findHostInHeaders()) {
+	if (!findHostInHeaders())
+	{
 		_code = 400;
 		return;
 	}
 
-	// Consomme la ligne vide séparant headers et body
-	std::string blank;
-	std::getline(str, blank);
+	// Consommer la ligne vide séparant headers et body
+	std::string emptyLine;
+	std::getline(str, emptyLine);
 
-	if (isChunked()) {
-		if (!decodeChunkedBody(str))
-			return;
-	} else {
-		std::string line;
-		std::getline(str, line);
-		if (!validateBody(line))
-			return;
-		addBody(line);
+	std::string body;
+	if (isChunked())
+	{
+		body = decodeChunkedBody(str);
+	}
+	else
+	{
+		// Lire tout le reste du stream
+		std::ostringstream oss;
+		oss << str.rdbuf();
+		body = oss.str();
 	}
 
-	if (_code == -1) {
+	if (!validateBody(body))
+	{
+		_code = 400;
+		return;
+	}
+
+	addBody(body);
+	if (_code == -1)
+	{
 		_code = 200;
 		makeTrue();
 	}

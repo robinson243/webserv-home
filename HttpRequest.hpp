@@ -40,16 +40,15 @@
 └─────────────────────────────────────────────┘
 */
 
-class HttpRequest
-{
-private:
+class HttpRequest {
+  private:
 	std::vector<unsigned char> _body;
 	bool _isValid;
 	std::map<std::string, std::string> _headers;
 	std::map<std::string, std::string> _requestLine;
 	int _code;
 
-public:
+  public:
 	HttpRequest();
 	~HttpRequest();
 	std::vector<unsigned char> getBody() const;
@@ -58,7 +57,6 @@ public:
 	const std::map<std::string, std::string> &getHeaders() const;
 	void print() const;
 	bool isChunked() const;
-	bool decodeChunkedBody(std::stringstream &str);
 	void addBody(std::string &element);
 	void makeTrue();
 	void addHeaders(const std::string &key, std::string &element);

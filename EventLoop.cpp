@@ -54,8 +54,7 @@ bool	EventLoop::isServerFd(int fd)
 
 void	EventLoop::run()
 {
-	int	z = 0;
-	int	a = 0;
+
 	int	bufferSize = 0;
 
 	while (_run)
