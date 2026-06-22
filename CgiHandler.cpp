@@ -187,6 +187,9 @@ HttpResponse handleCgi(const HttpRequest &req,
 		return freeEnvp(envp, envpVec.size()), makeResponse(500);
 	}
 
+	int saved_stdin = dup(STDIN_FILENO);
+	int saved_stdout = dup(STDOUT_FILENO);
+
 	pid = fork();
 	if (pid == -1)
 	{
@@ -194,13 +197,15 @@ HttpResponse handleCgi(const HttpRequest &req,
 		close(pipefdIn[1]);
 		close(pipefdOut[0]);
 		close(pipefdOut[1]);
+		close(saved_stdin);
+		close(saved_stdout);
 		return freeEnvp(envp, envpVec.size()), makeResponse(500);
 	}
-	int saved_stdin = dup(STDIN_FILENO);
-	int saved_stdout = dup(STDOUT_FILENO);
 
 	if (pid == 0)
 	{
+		close(saved_stdin);
+		close(saved_stdout);
 		if (dup2(pipefdIn[0], STDIN_FILENO) == -1)
 		{
 			close(pipefdIn[0]);
@@ -209,7 +214,6 @@ HttpResponse handleCgi(const HttpRequest &req,
 			close(pipefdOut[1]);
 			_exit(1);
 		}
-
 		if (dup2(pipefdOut[1], STDOUT_FILENO) == -1)
 		{
 			close(pipefdIn[0]);
@@ -218,12 +222,10 @@ HttpResponse handleCgi(const HttpRequest &req,
 			close(pipefdOut[1]);
 			_exit(1);
 		}
-
 		close(pipefdIn[0]);
 		close(pipefdIn[1]);
 		close(pipefdOut[0]);
 		close(pipefdOut[1]);
-
 		execve(scriptPath.c_str(), argv, envp);
 		_exit(1);
 	}

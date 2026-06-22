@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   HttpRequest.hpp                                    :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: romukena <romukena@student.42.fr>          +#+  +:+       +#+        */
+/*   By: mknroro <mknroro@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/04/14 15:16:52 by romukena          #+#    #+#             */
-/*   Updated: 2026/05/01 00:54:10 by romukena         ###   ########.fr       */
+/*   Updated: 2026/06/19 22:41:11 by mknroro          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -40,15 +40,16 @@
 └─────────────────────────────────────────────┘
 */
 
-class HttpRequest {
-  private:
+class HttpRequest
+{
+private:
 	std::vector<unsigned char> _body;
 	bool _isValid;
 	std::map<std::string, std::string> _headers;
 	std::map<std::string, std::string> _requestLine;
 	int _code;
 
-  public:
+public:
 	HttpRequest();
 	~HttpRequest();
 	std::vector<unsigned char> getBody() const;
@@ -56,7 +57,8 @@ class HttpRequest {
 	const std::map<std::string, std::string> &getRequest() const;
 	const std::map<std::string, std::string> &getHeaders() const;
 	void print() const;
-
+	bool isChunked() const;
+	bool decodeChunkedBody(std::stringstream &str);
 	void addBody(std::string &element);
 	void makeTrue();
 	void addHeaders(const std::string &key, std::string &element);
@@ -68,6 +70,7 @@ class HttpRequest {
 	bool findHostInHeaders();
 	bool isNumber(std::string &e);
 	bool validateBody(std::string &e);
+	std::string decodeChunkedBody(std::stringstream &str);
 	void addHttpRequest(std::string &req);
 	int getCode() const;
 };
