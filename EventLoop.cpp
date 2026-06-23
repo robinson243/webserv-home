@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   EventLoop.cpp                                      :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: oamairi <oamairi@student.42.fr>            +#+  +:+       +#+        */
+/*   By: mknroro <mknroro@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/04/30 18:32:40 by oamairi           #+#    #+#             */
-/*   Updated: 2026/06/22 15:51:03 by oamairi          ###   ########.fr       */
+/*   Updated: 2026/06/24 01:46:18 by mknroro          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -133,7 +133,7 @@ void	EventLoop::run()
 							}
 							else if (_buffers[_fds[i].fd].find("Transfer-Encoding: ") != std::string::npos)
 							{
-								std::cout << "buffer de T-E : " << _buffers[_fds[i].fd] << "\n";
+								// std::cout << "buffer de T-E : " << _buffers[_fds[i].fd] << "\n";
 								if (_buffers[_fds[i].fd].find("0\r\n\r\n", bufferSize) == std::string::npos)
 									continue;
 							}

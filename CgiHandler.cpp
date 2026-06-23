@@ -1,6 +1,7 @@
 #include "LocationConfig.hpp"
 #include "RequestHandler.hpp"
 #include "ServerConfig.hpp"
+#include <cerrno>
 
 bool isCgiRequest(const HttpRequest &req, const LocationConfig &loc) {
 	std::string uri = req.getRequest().at("uri");
