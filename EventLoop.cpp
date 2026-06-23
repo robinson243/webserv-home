@@ -120,7 +120,7 @@ void	EventLoop::run()
 						if (bufferSize > 4)
 							bufferSize = bufferSize - 4;
 						_buffers[_fds[i].fd].append(buffer, read);
-						std::cout << "buffer : " << std::string(buffer, read) << "\n";
+						// std::cout << "buffer : " << std::string(buffer, read) << "\n";
 						if (_buffers[_fds[i].fd].find("\r\n\r\n") != std::string::npos)
 						{
 							if (_buffers[_fds[i].fd].find("Content-Length: ") != std::string::npos)
