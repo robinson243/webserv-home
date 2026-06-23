@@ -120,9 +120,10 @@ void	EventLoop::run()
 						if (bufferSize > 4)
 							bufferSize = bufferSize - 4;
 						_buffers[_fds[i].fd].append(buffer, read);
-						if (_buffers[_fds[i].fd].find("\r\n\r\n", bufferSize) != std::string::npos)
+						std::cout << "buffer : " << std::string(buffer, read) << "\n";
+						if (_buffers[_fds[i].fd].find("\r\n\r\n") != std::string::npos)
 						{
-							if (_buffers[_fds[i].fd].find("Content-Length: ", bufferSize) != std::string::npos)
+							if (_buffers[_fds[i].fd].find("Content-Length: ") != std::string::npos)
 							{
 								int ligneContentLength = _buffers[_fds[i].fd].find("Content-Length: ", bufferSize);
 								int contentLength = std::atoi(_buffers[_fds[i].fd].substr(ligneContentLength + 16).c_str());
@@ -130,8 +131,9 @@ void	EventLoop::run()
 								if (contentLength > 0 && (int) body.size() < contentLength)
 									continue;
 							}
-							else if (_buffers[_fds[i].fd].find("Transfer-Encoding: ", bufferSize) != std::string::npos)
+							else if (_buffers[_fds[i].fd].find("Transfer-Encoding: ") != std::string::npos)
 							{
+								std::cout << "buffer de T-E : " << _buffers[_fds[i].fd] << "\n";
 								if (_buffers[_fds[i].fd].find("0\r\n\r\n", bufferSize) == std::string::npos)
 									continue;
 							}
