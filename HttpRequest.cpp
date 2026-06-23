@@ -11,7 +11,28 @@
 /* ************************************************************************** */
 
 #include "HttpRequest.hpp"
+#include <algorithm>
+#include <cctype>
 #include <cstdlib>
+
+static std::string trim(const std::string &s) {
+	size_t start = 0;
+	while (start < s.size()
+		   && std::isspace(static_cast<unsigned char>(s[start])))
+		++start;
+
+	size_t end = s.size();
+	while (end > start && std::isspace(static_cast<unsigned char>(s[end - 1])))
+		--end;
+
+	return s.substr(start, end - start);
+}
+
+static std::string toLowerStr(std::string s) {
+	std::transform(
+		s.begin(), s.end(), s.begin(), static_cast<int (*)(int)>(std::tolower));
+	return s;
+}
 
 HttpRequest::HttpRequest() : _isValid(false), _code(-1) {
 }
@@ -119,26 +140,35 @@ void HttpRequest::addRequestLine(std::stringstream &str) {
 	}
 }
 
-void HttpRequest::substractAndAdd(std::string &line) {
-	std::stringstream s(line);
-	std::string key;
-	std::string value;
-	s >> key;
-	std::string sub = key.substr(0, key.length() - 1);
-	s >> value;
-	addHeaders(sub, value);
+void HttpRequest::substractAndAdd(std::string &token) {
+	size_t pos = token.find(':');
+	if (pos == std::string::npos || pos == 0) {
+		_code = 400;
+		return;
+	}
+
+	std::string key = trim(token.substr(0, pos));
+	std::string value = trim(token.substr(pos + 1));
+
+	key = toLowerStr(key);
+	_headers[key] = value;
 }
 
 void HttpRequest::addAllHeaders(std::stringstream &str) {
 	std::string token;
+
 	while (std::getline(str, token)) {
-		if (token == "\r")
+		if (!token.empty() && token[token.size() - 1] == '\r')
+			token.erase(token.size() - 1);
+
+		if (token.empty())
 			break;
-		if (token.find(":") == std::string::npos || token.find(":") == 0
-			|| token.empty()) {
+
+		if (token.find(':') == std::string::npos || token.find(':') == 0) {
 			_code = 400;
 			return;
 		}
+
 		substractAndAdd(token);
 	}
 }
@@ -147,7 +177,7 @@ bool HttpRequest::findHostInHeaders() {
 	const std::map<std::string, std::string> &headers = getHeaders();
 
 	std::map<std::string, std::string>::const_iterator it =
-		headers.find("Host");
+		headers.find("host");
 
 	return it != headers.end() && !it->second.empty();
 }
@@ -163,7 +193,7 @@ bool HttpRequest::isNumber(std::string &e) {
 
 bool HttpRequest::isChunked() const {
 	std::map<std::string, std::string>::const_iterator it =
-		_headers.find("Transfer-Encoding");
+		_headers.find("transfer-encoding");
 
 	if (it == _headers.end())
 		return false;
@@ -179,7 +209,7 @@ bool HttpRequest::validateBody(std::string &e) {
 
 	const std::map<std::string, std::string> &headers = getHeaders();
 	std::map<std::string, std::string>::const_iterator it =
-		headers.find("Content-Length");
+		headers.find("content-length");
 
 	// Pas de Content-Length = pas de body attendu, c'est OK
 	if (it == headers.end())
@@ -202,40 +232,185 @@ bool HttpRequest::validateBody(std::string &e) {
 
 	return true;
 }
-
 std::string HttpRequest::decodeChunkedBody(std::stringstream &str) {
 	std::string result;
 	std::string sizeLine;
 
 	while (std::getline(str, sizeLine)) {
-		// Nettoyer le \r éventuel
 		if (!sizeLine.empty() && sizeLine[sizeLine.size() - 1] == '\r')
 			sizeLine.erase(sizeLine.size() - 1);
 
 		if (sizeLine.empty())
 			continue;
 
-		// Convertir la taille hexadécimale
 		char *pEnd;
-		long chunkSize = strtol(sizeLine.c_str(), &pEnd, 16);
+		long chunkSize = std::strtol(sizeLine.c_str(), &pEnd, 16);
 
-		// Chunk terminal
-		if (chunkSize == 0)
+		std::cerr << "[CHUNK] size_line='" << sizeLine
+				  << "' chunk_size=" << chunkSize << " eof=" << str.eof()
+				  << " good=" << str.good() << std::endl;
+
+		if (*pEnd != '\0' || chunkSize < 0) {
+			_code = 400;
+			return "";
+		}
+
+		if (chunkSize == 0) {
+			std::string endLine;
+			std::getline(str, endLine);
 			break;
+		}
 
-		// Lire exactement chunkSize octets
-		std::string chunkData(chunkSize, '\0');
-		str.read(&chunkData[0], chunkSize);
-		result += chunkData;
+		std::string chunkData;
+		chunkData.resize(chunkSize);
 
-		// Consommer le \r\n après le chunk
-		std::string crlf;
-		std::getline(str, crlf);
+		std::streamsize totalRead = 0;
+		while (totalRead < chunkSize && str.good()) {
+			str.read(&chunkData[totalRead], chunkSize - totalRead);
+			std::streamsize n = str.gcount();
+
+			std::cerr << "[CHUNK] read_count=" << n
+					  << " expected_remaining=" << (chunkSize - totalRead)
+					  << " total=" << (totalRead + n) << "/" << chunkSize
+					  << std::endl;
+
+			if (n <= 0) {
+				_code = 400;
+				return "";
+			}
+			totalRead += n;
+		}
+
+		if (totalRead != chunkSize) {
+			_code = 400;
+			return "";
+		}
+
+		result.append(chunkData);
+
+		char crlf[2];
+		str.read(crlf, 2);
+		if (str.gcount() != 2 || crlf[0] != '\r' || crlf[1] != '\n') {
+			_code = 400;
+			return "";
+		}
 	}
+
 	return result;
 }
 
+static std::string toLowerCopy(std::string s) {
+	for (size_t i = 0; i < s.size(); ++i)
+		s[i] = std::tolower(s[i]);
+	return s;
+}
+
+bool HttpRequest::isRawRequestComplete(const std::string &req) {
+	size_t headerEnd = req.find("\r\n\r\n");
+	if (headerEnd == std::string::npos) {
+		std::cerr << "[REQCHK] headers incomplete" << std::endl;
+		return false;
+	}
+
+	std::string headers = toLowerCopy(req.substr(0, headerEnd + 4));
+	std::string body = req.substr(headerEnd + 4);
+
+	if (headers.find("transfer-encoding: chunked") != std::string::npos) {
+		size_t pos = 0;
+
+		while (true) {
+			size_t lineEnd = body.find("\r\n", pos);
+			if (lineEnd == std::string::npos) {
+				std::cerr << "[REQCHK] chunk size line incomplete" << std::endl;
+				return false;
+			}
+
+			std::string sizeLine = body.substr(pos, lineEnd - pos);
+			size_t semi = sizeLine.find(';');
+			if (semi != std::string::npos)
+				sizeLine = sizeLine.substr(0, semi);
+
+			char *endptr = NULL;
+			long chunkSize = std::strtol(sizeLine.c_str(), &endptr, 16);
+
+			std::cerr << "[REQCHK] size_line='" << sizeLine
+					  << "' chunk_size=" << chunkSize << std::endl;
+
+			if (*endptr != '\0' || chunkSize < 0)
+				return false;
+
+			pos = lineEnd + 2;
+
+			if (chunkSize == 0) {
+				if (body.size() >= pos + 2
+					&& body.compare(pos, 2, "\r\n") == 0) {
+					std::cerr << "[REQCHK] full chunked request received"
+							  << std::endl;
+					return true;
+				}
+
+				size_t trailerEnd = body.find("\r\n\r\n", pos);
+				if (trailerEnd != std::string::npos) {
+					std::cerr << "[REQCHK] full chunked request received with "
+								 "trailers"
+							  << std::endl;
+					return true;
+				}
+
+				std::cerr << "[REQCHK] last chunk seen but final CRLF missing"
+						  << std::endl;
+				return false;
+			}
+
+			if (body.size() < pos + static_cast<size_t>(chunkSize) + 2) {
+				std::cerr << "[REQCHK] chunk data incomplete"
+						  << " need=" << (pos + chunkSize + 2)
+						  << " have=" << body.size() << std::endl;
+				return false;
+			}
+
+			pos += chunkSize;
+
+			if (body.compare(pos, 2, "\r\n") != 0) {
+				std::cerr << "[REQCHK] chunk CRLF missing after data"
+						  << std::endl;
+				return false;
+			}
+
+			pos += 2;
+		}
+	}
+
+	size_t clPos = headers.find("content-length:");
+	if (clPos != std::string::npos) {
+		size_t start = clPos + 15;
+		while (start < headers.size()
+			   && (headers[start] == ' ' || headers[start] == '\t'))
+			++start;
+		size_t end = headers.find("\r\n", start);
+		std::string value = headers.substr(start, end - start);
+		long contentLength = std::strtol(value.c_str(), NULL, 10);
+
+		std::cerr << "[REQCHK] content-length=" << contentLength
+				  << " body_have=" << body.size() << std::endl;
+
+		return contentLength >= 0
+			   && body.size() >= static_cast<size_t>(contentLength);
+	}
+
+	std::cerr << "[REQCHK] no body framing header, request considered complete"
+			  << std::endl;
+	return true;
+}
+
 void HttpRequest::addHttpRequest(std::string &req) {
+	std::cerr << "[REQCHK] raw_size=" << req.size() << std::endl;
+
+	if (!isRawRequestComplete(req)) {
+		std::cerr << "[REQCHK] incomplete raw request -> stop parsing"
+				  << std::endl;
+		return;
+	}
 	std::stringstream str(req);
 	addRequestLine(str);
 	if (_code != -1)
@@ -244,7 +419,12 @@ void HttpRequest::addHttpRequest(std::string &req) {
 	addAllHeaders(str);
 	if (_code != -1)
 		return;
-
+	for (std::map<std::string, std::string>::const_iterator it =
+			 _headers.begin();
+		 it != _headers.end();
+		 ++it)
+		std::cerr << "[HDR] '" << it->first << "' = '" << it->second << "'"
+				  << std::endl;
 	if (!findHostInHeaders()) {
 		_code = 400;
 		return;
@@ -270,4 +450,12 @@ void HttpRequest::addHttpRequest(std::string &req) {
 		_code = 200;
 		makeTrue();
 	}
+	std::cerr << "[PARSE] content-length="
+			  << (_headers.count("content-length") ? _headers["content-length"]
+												   : "<missing>")
+			  << " transfer-encoding="
+			  << (_headers.count("transfer-encoding")
+					  ? _headers["transfer-encoding"]
+					  : "<missing>")
+			  << " body_size=" << body.size() << std::endl;
 }

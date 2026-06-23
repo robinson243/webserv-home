@@ -145,7 +145,7 @@ void	EventLoop::run()
 							std::string raw = response.serialize();
 							send(_fds[i].fd, raw.c_str(), raw.size(), 0);
 							std::map<std::string, std::string> headers = response.getHeaders();
-							std::map<std::string, std::string>::iterator connIt = headers.find("Connection");
+							std::map<std::string, std::string>::iterator connIt = headers.find("connection");
 							if (connIt != headers.end() && connIt->second == "close")
 							{
 								close(_fds[i].fd);

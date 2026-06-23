@@ -69,6 +69,7 @@ class HttpRequest {
 	bool isNumber(std::string &e);
 	bool validateBody(std::string &e);
 	std::string decodeChunkedBody(std::stringstream &str);
+	bool isRawRequestComplete(const std::string &req);
 	void addHttpRequest(std::string &req);
 	int getCode() const;
 };

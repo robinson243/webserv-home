@@ -77,7 +77,7 @@ void HttpResponse::addCode(int code) {
 	_version = "HTTP/1.1";
 	_message = codeReturn(code);
 	if (code >= 300)
-		_headers["Connection"] = "close";
+		_headers["connection"] = "close";
 }
 
 void HttpResponse::addVersion(std::string &e) {
@@ -107,7 +107,7 @@ std::string HttpResponse::serialize() {
 
     std::ostringstream lenOss;
     lenOss << body.size();
-    _headers["Content-Length"] = lenOss.str();
+    _headers["content-length"] = lenOss.str();
 
     std::ostringstream oss;
     oss << _code;

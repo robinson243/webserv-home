@@ -118,10 +118,10 @@ HttpResponse makeResponse(int code) {
 	r.addCode(code);
 
 	if (!body.empty()) {
-		r.addHeadersResponse("Content-Type", "text/html");
+		r.addHeadersResponse("content-type", "text/html");
 		std::ostringstream ss;
 		ss << body.size();
-		r.addHeadersResponse("Content-Length", ss.str());
+		r.addHeadersResponse("content-length", ss.str());
 		r.setBody(std::vector<unsigned char>(body.begin(), body.end()));
 	}
 
@@ -268,7 +268,7 @@ HttpResponse Get(const HttpRequest &req, const ServerConfig &server) {
 	if (loc.getCode() >= 300 && loc.getCode() < 400 && !loc.getUrl().empty()) {
 		HttpResponse resp;
 		resp = makeResponse(loc.getCode());
-		resp.addHeadersResponse("Location", loc.getUrl());
+		resp.addHeadersResponse("location", loc.getUrl());
 		return resp;
 	}
 
@@ -293,10 +293,10 @@ HttpResponse Get(const HttpRequest &req, const ServerConfig &server) {
 			}
 			std::string contentType = getContentType(path);
 			response = makeResponse(200);
-			response.addHeadersResponse("Content-Type", contentType);
+			response.addHeadersResponse("content-type", contentType);
 			std::ostringstream oss;
 			oss << body.length();
-			response.addHeadersResponse("Content-Length", oss.str());
+			response.addHeadersResponse("content-length", oss.str());
 			response.setBody(
 				std::vector<unsigned char>(body.begin(), body.end()));
 			return response;
@@ -304,7 +304,7 @@ HttpResponse Get(const HttpRequest &req, const ServerConfig &server) {
 			std::string uri = req.getRequest().at("uri");
 			if (uri.empty() || uri[uri.size() - 1] != '/') {
 				response = makeResponse(301);
-				response.addHeadersResponse("Location", uri + "/");
+				response.addHeadersResponse("location", uri + "/");
 				return response;
 			}
 			// Sous-cas 1 : chercher un fichier index
@@ -322,10 +322,10 @@ HttpResponse Get(const HttpRequest &req, const ServerConfig &server) {
 					}
 					std::string contentType = getContentType(indexPath);
 					response = makeResponse(200);
-					response.addHeadersResponse("Content-Type", contentType);
+					response.addHeadersResponse("content-type", contentType);
 					std::ostringstream oss;
 					oss << body.length();
-					response.addHeadersResponse("Content-Length", oss.str());
+					response.addHeadersResponse("content-length", oss.str());
 					response.setBody(
 						std::vector<unsigned char>(body.begin(), body.end()));
 					return response;
@@ -373,8 +373,8 @@ HttpResponse Get(const HttpRequest &req, const ServerConfig &server) {
 				oss << html.length();
 
 				response = makeResponse(200);
-				response.addHeadersResponse("Content-Type", "text/html");
-				response.addHeadersResponse("Content-Length", oss.str());
+				response.addHeadersResponse("content-type", "text/html");
+				response.addHeadersResponse("content-length", oss.str());
 				response.setBody(
 					std::vector<unsigned char>(html.begin(), html.end()));
 				return response;
@@ -503,7 +503,7 @@ HttpResponse Post(const HttpRequest &req, const ServerConfig &server) {
 
 	if (effectiveMaxBody != 0) {
 		std::map<std::string, std::string>::iterator it =
-			headers.find("Content-Length");
+			headers.find("content-length");
 
 		if (it != headers.end()) {
 			std::istringstream iss(it->second);
@@ -520,7 +520,7 @@ HttpResponse Post(const HttpRequest &req, const ServerConfig &server) {
 	if (loc.hasRedirect()) {
 		HttpResponse resp;
 		resp = makeResponse(loc.getCode());
-		resp.addHeadersResponse("Location", loc.getUrl());
+		resp.addHeadersResponse("location", loc.getUrl());
 		return resp;
 	}
 
@@ -531,10 +531,10 @@ HttpResponse Post(const HttpRequest &req, const ServerConfig &server) {
 		return response;
 	}
 
-	bool hasContentLength = (headers.find("Content-Length") != headers.end());
+	bool hasContentLength = (headers.find("content-length") != headers.end());
 	bool isChunked = false;
 	std::map<std::string, std::string>::iterator itTE =
-		headers.find("Transfer-Encoding");
+		headers.find("transfer-encoding");
 	if (itTE != headers.end() && itTE->second == "chunked")
 		isChunked = true;
 
@@ -621,7 +621,7 @@ const ServerConfig &selectServer(const std::vector<ServerConfig> &servers,
 								 const HttpRequest &req) {
 	std::map<std::string, std::string> headers = req.getHeaders();
 	std::map<std::string, std::string>::const_iterator it =
-		headers.find("Host");
+		headers.find("host");
 
 	if (it == headers.end())
 		return servers[0];
@@ -703,7 +703,7 @@ HttpResponse handleRequest(const HttpRequest &req,
 		std::cerr << "[ROUTE] redirect code=" << loc.getCode()
 				  << " url=" << loc.getUrl() << std::endl;
 		HttpResponse resp = makeResponse(loc.getCode());
-		resp.addHeadersResponse("Location", loc.getUrl());
+		resp.addHeadersResponse("location", loc.getUrl());
 		std::cerr << "[RESP] status=" << resp.getCode() << std::endl;
 		return resp;
 	}
@@ -746,7 +746,7 @@ HttpResponse handleRequest(const HttpRequest &req,
 	if (allowMeth.find(method) == allowMeth.end()) {
 		std::cerr << "[ERROR] method not allowed -> 405" << std::endl;
 		response = makeResponse(405);
-		response.addHeadersResponse("Allow", buildAllowHeader(allowMeth));
+		response.addHeadersResponse("allow", buildAllowHeader(allowMeth));
 		std::cerr << "[RESP] status=" << response.getCode() << std::endl;
 		return response;
 	}
@@ -766,7 +766,9 @@ HttpResponse handleRequest(const HttpRequest &req,
 			size_t bodySize = req.getBody().size();
 			size_t maxBodySize = 1000000;
 
-			std::cerr << "[BODY] POST size=" << bodySize
+			std::cerr << "[POST-CGI-CHECK] uri=" << path << " content_length="
+					  << (itCl != r.end() ? itCl->second : "<missing>")
+					  << " body_size=" << req.getBody().size()
 					  << " max=" << maxBodySize << std::endl;
 
 			if (bodySize > maxBodySize) {
@@ -796,7 +798,7 @@ HttpResponse handleRequest(const HttpRequest &req,
 		std::cerr << "[DISPATCH] HEAD" << std::endl;
 		response = Get(req, server);
 		response.setBody(std::vector<unsigned char>());
-		response.addHeadersResponse("Connection", "close");
+		response.addHeadersResponse("connection", "close");
 	} else if (method == "POST") {
 		std::cerr << "[DISPATCH] POST" << std::endl;
 		response = Post(req, server);
