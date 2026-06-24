@@ -495,27 +495,7 @@ HttpResponse Post(const HttpRequest &req, const ServerConfig &server) {
 
 	const LocationConfig &loc = locations[valLocation];
 
-	size_t effectiveMaxBody = server.getBodySizeClient();
-	if (loc.gethasmaxsize())
-		effectiveMaxBody = loc.getMaxBody();
-
 	std::map<std::string, std::string> headers = req.getHeaders();
-
-	if (effectiveMaxBody != 0) {
-		std::map<std::string, std::string>::iterator it =
-			headers.find("content-length");
-
-		if (it != headers.end()) {
-			std::istringstream iss(it->second);
-			size_t announcedSize = 0;
-			iss >> announcedSize;
-			if (!iss.fail() && announcedSize > effectiveMaxBody)
-				return makeResponse(413);
-		}
-
-		if (req.getBody().size() > effectiveMaxBody)
-			return makeResponse(413);
-	}
 
 	if (loc.hasRedirect()) {
 		HttpResponse resp;
@@ -652,7 +632,6 @@ HttpResponse handleRequest(const HttpRequest &req,
 
 	const std::map<std::string, std::string> &r = req.getRequest();
 
-
 	const ServerConfig &server = selectServer(servers, req);
 
 	if (!req.getValid()) {
@@ -685,7 +664,6 @@ HttpResponse handleRequest(const HttpRequest &req,
 	std::set<std::string> allowMeth =
 		defaultAllowedMethodsIfEmpty(loc.getAllowMethods());
 
-
 	if (!isImplementedMethod(method)) {
 		response = makeResponse(501);
 		return response;
@@ -696,34 +674,43 @@ HttpResponse handleRequest(const HttpRequest &req,
 	std::string path = (qpos == std::string::npos) ? uri : uri.substr(0, qpos);
 	size_t dotpos = path.rfind(".");
 
-
 	for (std::set<std::string>::iterator mit = allowMeth.begin();
 		 mit != allowMeth.end();
 		 ++mit)
 
-	if (allowMeth.find(method) == allowMeth.end()) {
-		response = makeResponse(405);
-		response.addHeadersResponse("allow", buildAllowHeader(allowMeth));
-		return response;
-	}
+		if (allowMeth.find(method) == allowMeth.end()) {
+			response = makeResponse(405);
+			response.addHeadersResponse("allow", buildAllowHeader(allowMeth));
+			return response;
+		}
 
+	size_t effectiveMaxBody = server.getBodySizeClient();
+	if (loc.gethasmaxsize())
+		effectiveMaxBody = loc.getMaxBody();
+
+	if (method == "POST" && effectiveMaxBody != 0) {
+		const std::map<std::string, std::string> &headers = req.getHeaders();
+
+		std::map<std::string, std::string>::const_iterator itCL =
+			headers.find("content-length");
+
+		if (itCL != headers.end()) {
+			std::istringstream iss(itCL->second);
+			size_t announcedSize = 0;
+			iss >> announcedSize;
+			if (!iss.fail() && announcedSize > effectiveMaxBody)
+				return makeResponse(413);
+		}
+
+		if (req.getBody().size() > effectiveMaxBody)
+			return makeResponse(413);
+	}
 	if (dotpos != std::string::npos) {
 		std::string ext = path.substr(dotpos);
 		const std::map<std::string, std::string> &cgiExt =
 			loc.getCgiExtension();
 
-
 		if (cgiExt.find(ext) != cgiExt.end() && method == "POST") {
-
-			size_t bodySize = req.getBody().size();
-			size_t maxBodySize = 1000000;
-
-
-			if (bodySize > maxBodySize) {
-				HttpResponse resp = makeResponse(413);
-				return resp;
-			}
-
 			HttpResponse cgiResp = handleCgi(req, loc, ext);
 			return cgiResp;
 		}
