@@ -6,7 +6,7 @@
 /*   By: oamairi <oamairi@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/04/30 18:32:40 by oamairi           #+#    #+#             */
-/*   Updated: 2026/06/16 15:56:01 by oamairi          ###   ########.fr       */
+/*   Updated: 2026/06/24 15:15:55 by oamairi          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -97,8 +97,8 @@ void	EventLoop::run()
 				}
 				else
 				{
-					char buffer[4096];
-					int read = recv(_fds[i].fd, buffer, 4096, 0);
+					char buffer[131072];
+					int read = recv(_fds[i].fd, buffer, 131072, 0);
 					if (read <= 0)
 					{
 						if (read < 0)
@@ -122,6 +122,11 @@ void	EventLoop::run()
 								if (contentLength > 0 && (int) body.size() < contentLength)
 									continue;
 							}
+							else if (_buffers[_fds[i].fd].find("Transfer-Encoding: ") != std::string::npos)
+							{
+								if (_buffers[_fds[i].fd].find("0\r\n\r\n") == std::string::npos)
+									continue;
+							}
 							HttpRequest request;
 							request.addHttpRequest(_buffers[_fds[i].fd]);
 							_buffers[_fds[i].fd].clear();
@@ -129,9 +134,8 @@ void	EventLoop::run()
 							response = handleRequest(request, _clientFdToConfig[_fds[i].fd]);
 							std::string raw = response.serialize();
 							send(_fds[i].fd, raw.c_str(), raw.size(), 0);
-							
 							std::map<std::string, std::string> headers = response.getHeaders();
-							std::map<std::string, std::string>::iterator connIt = headers.find("Connection");
+							std::map<std::string, std::string>::iterator connIt = headers.find("connection");
 							if (connIt != headers.end() && connIt->second == "close")
 							{
 								close(_fds[i].fd);

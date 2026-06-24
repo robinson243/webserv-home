@@ -118,10 +118,10 @@ HttpResponse makeResponse(int code) {
 	r.addCode(code);
 
 	if (!body.empty()) {
-		r.addHeadersResponse("Content-Type", "text/html");
+		r.addHeadersResponse("content-type", "text/html");
 		std::ostringstream ss;
 		ss << body.size();
-		r.addHeadersResponse("Content-Length", ss.str());
+		r.addHeadersResponse("content-length", ss.str());
 		r.setBody(std::vector<unsigned char>(body.begin(), body.end()));
 	}
 
@@ -268,7 +268,7 @@ HttpResponse Get(const HttpRequest &req, const ServerConfig &server) {
 	if (loc.getCode() >= 300 && loc.getCode() < 400 && !loc.getUrl().empty()) {
 		HttpResponse resp;
 		resp = makeResponse(loc.getCode());
-		resp.addHeadersResponse("Location", loc.getUrl());
+		resp.addHeadersResponse("location", loc.getUrl());
 		return resp;
 	}
 
@@ -293,10 +293,10 @@ HttpResponse Get(const HttpRequest &req, const ServerConfig &server) {
 			}
 			std::string contentType = getContentType(path);
 			response = makeResponse(200);
-			response.addHeadersResponse("Content-Type", contentType);
+			response.addHeadersResponse("content-type", contentType);
 			std::ostringstream oss;
 			oss << body.length();
-			response.addHeadersResponse("Content-Length", oss.str());
+			response.addHeadersResponse("content-length", oss.str());
 			response.setBody(
 				std::vector<unsigned char>(body.begin(), body.end()));
 			return response;
@@ -304,7 +304,7 @@ HttpResponse Get(const HttpRequest &req, const ServerConfig &server) {
 			std::string uri = req.getRequest().at("uri");
 			if (uri.empty() || uri[uri.size() - 1] != '/') {
 				response = makeResponse(301);
-				response.addHeadersResponse("Location", uri + "/");
+				response.addHeadersResponse("location", uri + "/");
 				return response;
 			}
 			// Sous-cas 1 : chercher un fichier index
@@ -322,10 +322,10 @@ HttpResponse Get(const HttpRequest &req, const ServerConfig &server) {
 					}
 					std::string contentType = getContentType(indexPath);
 					response = makeResponse(200);
-					response.addHeadersResponse("Content-Type", contentType);
+					response.addHeadersResponse("content-type", contentType);
 					std::ostringstream oss;
 					oss << body.length();
-					response.addHeadersResponse("Content-Length", oss.str());
+					response.addHeadersResponse("content-length", oss.str());
 					response.setBody(
 						std::vector<unsigned char>(body.begin(), body.end()));
 					return response;
@@ -373,8 +373,8 @@ HttpResponse Get(const HttpRequest &req, const ServerConfig &server) {
 				oss << html.length();
 
 				response = makeResponse(200);
-				response.addHeadersResponse("Content-Type", "text/html");
-				response.addHeadersResponse("Content-Length", oss.str());
+				response.addHeadersResponse("content-type", "text/html");
+				response.addHeadersResponse("content-length", oss.str());
 				response.setBody(
 					std::vector<unsigned char>(html.begin(), html.end()));
 				return response;
@@ -495,30 +495,46 @@ HttpResponse Post(const HttpRequest &req, const ServerConfig &server) {
 
 	const LocationConfig &loc = locations[valLocation];
 
-	size_t maxBody = server.getBodySizeClient();
-	size_t contentLength = req.getBody().size();
-	if (maxBody != 0 && !loc.gethasmaxsize() && contentLength > maxBody)
-		return makeResponse(413);
+	size_t effectiveMaxBody = server.getBodySizeClient();
+	if (loc.gethasmaxsize())
+		effectiveMaxBody = loc.getMaxBody();
+
+	std::map<std::string, std::string> headers = req.getHeaders();
+
+	if (effectiveMaxBody != 0) {
+		std::map<std::string, std::string>::iterator it =
+			headers.find("content-length");
+
+		if (it != headers.end()) {
+			std::istringstream iss(it->second);
+			size_t announcedSize = 0;
+			iss >> announcedSize;
+			if (!iss.fail() && announcedSize > effectiveMaxBody)
+				return makeResponse(413);
+		}
+
+		if (req.getBody().size() > effectiveMaxBody)
+			return makeResponse(413);
+	}
 
 	if (loc.hasRedirect()) {
 		HttpResponse resp;
 		resp = makeResponse(loc.getCode());
-		resp.addHeadersResponse("Location", loc.getUrl());
+		resp.addHeadersResponse("location", loc.getUrl());
 		return resp;
 	}
 
 	std::vector<unsigned char> body = req.getBody();
-	std::map<std::string, std::string> headers = req.getHeaders();
 
 	if (body.empty()) {
 		response = makeResponse(400);
 		return response;
 	}
 
-	bool hasContentLength = (headers.find("Content-Length") != headers.end());
+	bool hasContentLength = (headers.find("content-length") != headers.end());
 	bool isChunked = false;
 	std::map<std::string, std::string>::iterator itTE =
-		headers.find("Transfer-Encoding");
+		headers.find("transfer-encoding");
 	if (itTE != headers.end() && itTE->second == "chunked")
 		isChunked = true;
 
@@ -526,9 +542,6 @@ HttpResponse Post(const HttpRequest &req, const ServerConfig &server) {
 		response = makeResponse(400);
 		return response;
 	}
-
-	if (loc.gethasmaxsize() && body.size() > loc.getMaxBody())
-		return makeResponse(413);
 
 	std::map<std::string, std::string> r = req.getRequest();
 	std::string uri = r["uri"];
@@ -548,6 +561,7 @@ HttpResponse Post(const HttpRequest &req, const ServerConfig &server) {
 		response = makeResponse(400);
 		return response;
 	}
+
 	if (filename.find("..") != std::string::npos
 		|| filename.find("%2e%2e") != std::string::npos
 		|| filename.find("%2E%2E") != std::string::npos
@@ -582,6 +596,7 @@ HttpResponse Post(const HttpRequest &req, const ServerConfig &server) {
 		response = makeResponse(500);
 		return response;
 	}
+
 	file.close();
 	response = makeResponse(201);
 	return response;
@@ -606,7 +621,7 @@ const ServerConfig &selectServer(const std::vector<ServerConfig> &servers,
 								 const HttpRequest &req) {
 	std::map<std::string, std::string> headers = req.getHeaders();
 	std::map<std::string, std::string>::const_iterator it =
-		headers.find("Host");
+		headers.find("host");
 
 	if (it == headers.end())
 		return servers[0];
@@ -630,10 +645,16 @@ const ServerConfig &selectServer(const std::vector<ServerConfig> &servers,
 
 // Politique choisie : si allowed_methods est vide sur une location,
 // on autorise par défaut les 3 méthodes mandatory : GET, POST, DELETE.
+
 HttpResponse handleRequest(const HttpRequest &req,
 						   const std::vector<ServerConfig> &servers) {
 	HttpResponse response;
+
+	const std::map<std::string, std::string> &r = req.getRequest();
+
+
 	const ServerConfig &server = selectServer(servers, req);
+
 	if (!req.getValid()) {
 		response = makeResponse(req.getCode());
 		return response;
@@ -650,11 +671,10 @@ HttpResponse handleRequest(const HttpRequest &req,
 
 	if (loc.getCode() >= 300 && loc.getCode() < 400 && !loc.getUrl().empty()) {
 		HttpResponse resp = makeResponse(loc.getCode());
-		resp.addHeadersResponse("Location", loc.getUrl());
+		resp.addHeadersResponse("location", loc.getUrl());
 		return resp;
 	}
 
-	const std::map<std::string, std::string> &r = req.getRequest();
 	std::map<std::string, std::string>::const_iterator it = r.find("method");
 	if (it == r.end()) {
 		response = makeResponse(400);
@@ -665,6 +685,7 @@ HttpResponse handleRequest(const HttpRequest &req,
 	std::set<std::string> allowMeth =
 		defaultAllowedMethodsIfEmpty(loc.getAllowMethods());
 
+
 	if (!isImplementedMethod(method)) {
 		response = makeResponse(501);
 		return response;
@@ -674,18 +695,43 @@ HttpResponse handleRequest(const HttpRequest &req,
 	size_t qpos = uri.find("?");
 	std::string path = (qpos == std::string::npos) ? uri : uri.substr(0, qpos);
 	size_t dotpos = path.rfind(".");
+
+
+	for (std::set<std::string>::iterator mit = allowMeth.begin();
+		 mit != allowMeth.end();
+		 ++mit)
+
+	if (allowMeth.find(method) == allowMeth.end()) {
+		response = makeResponse(405);
+		response.addHeadersResponse("allow", buildAllowHeader(allowMeth));
+		return response;
+	}
+
 	if (dotpos != std::string::npos) {
 		std::string ext = path.substr(dotpos);
 		const std::map<std::string, std::string> &cgiExt =
 			loc.getCgiExtension();
-		if (cgiExt.find(ext) != cgiExt.end() && method == "POST")
-			return handleCgi(req, loc, ext);
-	}
 
-	if (allowMeth.find(method) == allowMeth.end()) {
-		response = makeResponse(405);
-		response.addHeadersResponse("Allow", buildAllowHeader(allowMeth));
-		return response;
+
+		if (cgiExt.find(ext) != cgiExt.end() && method == "POST") {
+
+			size_t bodySize = req.getBody().size();
+			size_t maxBodySize = 1000000;
+
+
+			if (bodySize > maxBodySize) {
+				HttpResponse resp = makeResponse(413);
+				return resp;
+			}
+
+			HttpResponse cgiResp = handleCgi(req, loc, ext);
+			return cgiResp;
+		}
+
+		if (cgiExt.find(ext) != cgiExt.end() && method == "GET") {
+			HttpResponse cgiResp = handleCgi(req, loc, ext);
+			return cgiResp;
+		}
 	}
 
 	if (method == "GET") {
@@ -693,7 +739,7 @@ HttpResponse handleRequest(const HttpRequest &req,
 	} else if (method == "HEAD") {
 		response = Get(req, server);
 		response.setBody(std::vector<unsigned char>());
-		response.addHeadersResponse("Connection", "close");
+		response.addHeadersResponse("connection", "close");
 	} else if (method == "POST") {
 		response = Post(req, server);
 	} else if (method == "DELETE") {
