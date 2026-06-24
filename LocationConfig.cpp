@@ -6,7 +6,7 @@
 /*   By: ydembele <ydembele@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/04/14 13:44:36 by romukena          #+#    #+#             */
-/*   Updated: 2026/06/24 16:16:51 by ydembele         ###   ########.fr       */
+/*   Updated: 2026/06/24 16:31:52 by ydembele         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -53,11 +53,11 @@ LocationConfig parseLocation(std::vector<Token>::iterator &it, std::vector<Token
 			location.setAlias(parseSingleValueDirective(it, end, it->value));
 		}
 		else if (*it == "autoindex")
-    	parseAutoindex(it, end, location);
+    		parseAutoindex(it, end, location);
 		else if (*it == "allowed_methods")
-    	parseAllowMethods(it, end, location);
+    		parseAllowMethods(it, end, location);
 		else if (*it == "index")
-    	parseIndex(it, end, location);
+    		parseIndex(it, end, location);
 		else if (*it == "upload_path")
 		{
 			if (!location.getUploadPath().empty())
