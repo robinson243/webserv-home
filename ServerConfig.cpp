@@ -6,7 +6,7 @@
 /*   By: ydembele <ydembele@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/04/16 13:40:39 by ydembele          #+#    #+#             */
-/*   Updated: 2026/05/11 16:31:53 by ydembele         ###   ########.fr       */
+/*   Updated: 2026/06/24 15:57:53 by ydembele         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -210,12 +210,23 @@ bool isNumber(const std::string& s)
 
 size_t findSize(std::vector<Token>::iterator &it, std::vector<Token>::iterator end)
 {
+	errno = 0;
+	size_t value = 0;
+
 	++it;
 	if (it == end)
 		throw std::runtime_error("client_max_body_size: missing value");
 	if (!isNumber(it->value))
-    throw std::runtime_error("client_max_body_size: Invalid body size");
-	size_t value = strtoul((it->value).c_str(), NULL, 10);
+    	throw std::runtime_error("client_max_body_size: Invalid body size");
+	unsigned long tmp = strtoul((it->value).c_str(), NULL, 10);
+	if (errno == ERANGE || tmp > HARD_MAX_BODY_SIZE)
+	{
+    	throw std::runtime_error("client_max_body_size too large (max 10 MiB)");		
+	}
+	else
+	{
+	    value = static_cast<size_t>(tmp);
+	}
 	++it;
 	if (it == end || *it != ";" || it->in_quotes)
 		throw std::runtime_error("client_max_body_size: Body size: missing ';");

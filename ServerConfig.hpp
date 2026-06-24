@@ -6,7 +6,7 @@
 /*   By: ydembele <ydembele@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/04/14 15:01:30 by romukena          #+#    #+#             */
-/*   Updated: 2026/05/11 16:39:51 by ydembele         ###   ########.fr       */
+/*   Updated: 2026/06/24 15:56:29 by ydembele         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -27,6 +27,8 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include "LocationConfig.hpp"
+
+#define HARD_MAX_BODY_SIZE (10 * 1024 * 1024) // 10 MiB
 
 // class ServerConfig;
 class LocationConfig;
