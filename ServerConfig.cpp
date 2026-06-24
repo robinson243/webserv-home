@@ -6,7 +6,7 @@
 /*   By: ydembele <ydembele@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/04/16 13:40:39 by ydembele          #+#    #+#             */
-/*   Updated: 2026/06/24 16:16:29 by ydembele         ###   ########.fr       */
+/*   Updated: 2026/06/24 16:34:47 by ydembele         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -344,6 +344,8 @@ bool isValidHost(const std::string &host)
 
 void findPort(std::vector<Token>::iterator &it, std::vector<Token>::iterator end, ServerConfig &server)
 {
+	errno = 0;
+
     ++it;
     if (it == end)
         throw std::runtime_error("listen: missing value");
@@ -370,8 +372,10 @@ void findPort(std::vector<Token>::iterator &it, std::vector<Token>::iterator end
         portStr = value;
         server.setListenHost("0.0.0.0");
     }
+	if (!isNumber(portStr))
+    	throw std::runtime_error("client_max_body_size: Invalid body size");
     long port = std::strtol(portStr.c_str(), NULL, 10);
-    if (port < 1 || port > 65535)
+    if (errno == ERANGE || port < 1 || port > 65535)
         throw std::runtime_error("listen: invalid port range [1-65535]");
     ++it;
     if (it == end || *it != ";" || it->in_quotes)
