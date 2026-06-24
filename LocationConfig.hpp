@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   LocationConfig.hpp                                 :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: oamairi <oamairi@student.42.fr>            +#+  +:+       +#+        */
+/*   By: ydembele <ydembele@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/04/14 12:17:03 by romukena          #+#    #+#             */
-/*   Updated: 2026/06/16 12:41:11 by oamairi          ###   ########.fr       */
+/*   Updated: 2026/06/18 15:13:25 by ydembele         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -47,6 +47,8 @@
 
 // Faire les getters et les setters;
 // Faire le constructeur de defaut;
+
+struct Token;
 
 class LocationConfig {
   private:

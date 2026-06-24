@@ -6,7 +6,7 @@
 /*   By: ydembele <ydembele@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/04/14 15:01:30 by romukena          #+#    #+#             */
-/*   Updated: 2026/05/01 15:44:27 by ydembele         ###   ########.fr       */
+/*   Updated: 2026/06/24 15:56:29 by ydembele         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -26,22 +26,13 @@
 #include <netinet/ip.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
+#include "LocationConfig.hpp"
 
+#define HARD_MAX_BODY_SIZE (10 * 1024 * 1024) // 10 MiB
+
+// class ServerConfig;
 class LocationConfig;
-class ServerConfig;
 
-struct ListenSocket
-{
-    std::string host;
-    unsigned int port;
-    int fd;
-    sockaddr_in addr;
-
-    std::vector<ServerConfig*> servers;
-};
-
-
-class LocationConfig;
 
 struct Token
 {
@@ -54,6 +45,7 @@ struct Token
 
 	Token(const std::string &v, bool q) : value(v), in_quotes(q) {}
 };
+
 
 class ServerConfig {
 private:
@@ -115,7 +107,6 @@ void validateServer(ServerConfig &server);
 std::map<int, std::vector<ServerConfig*> > groupServersByPort(const std::vector<ServerConfig> &servers);
 ServerConfig *selectServer(int port, std::string host, std::vector<ServerConfig> &servers);
 LocationConfig selectLocation(std::string uri, ServerConfig &servers);
-std::vector<ListenSocket> buildListenSockets(std::vector<ServerConfig> &servers);
 
 
 bool operator==(const Token &t, const std::string &s);
