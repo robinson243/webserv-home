@@ -1,0 +1,34 @@
+==1818449== Memcheck, a memory error detector
+==1818449== Copyright (C) 2002-2024, and GNU GPL'd, by Julian Seward et al.
+==1818449== Using Valgrind-3.26.0 and LibVEX; rerun with -h for copyright info
+==1818449== Command: /usr/bin/dd bs=1 count=16
+==1818449== Parent PID: 1818448
+==1818449== 
+==1818449== Invalid size value: 1 alignment value: 4096 (size should be a multiple of alignment)
+==1818449==    at 0x48587BC: aligned_alloc (vg_replace_malloc.c:2404)
+==1818449==    by 0x4006D4D: ??? (in /usr/bin/dd)
+==1818449==    by 0x40027FA: ??? (in /usr/bin/dd)
+==1818449==    by 0x4885574: (below main) (in /usr/lib64/libc.so.6)
+==1818449== 
+==1818449== 
+==1818449== FILE DESCRIPTORS: 3 open (3 inherited) at exit.
+==1818449== 
+==1818449== HEAP SUMMARY:
+==1818449==     in use at exit: 1 bytes in 1 blocks
+==1818449==   total heap usage: 17 allocs, 16 frees, 234 bytes allocated
+==1818449== 
+==1818449== 1 bytes in 1 blocks are still reachable in loss record 1 of 1
+==1818449==    at 0x485885F: aligned_alloc (vg_replace_malloc.c:2404)
+==1818449==    by 0x4006D4D: ??? (in /usr/bin/dd)
+==1818449==    by 0x40027FA: ??? (in /usr/bin/dd)
+==1818449==    by 0x4885574: (below main) (in /usr/lib64/libc.so.6)
+==1818449== 
+==1818449== LEAK SUMMARY:
+==1818449==    definitely lost: 0 bytes in 0 blocks
+==1818449==    indirectly lost: 0 bytes in 0 blocks
+==1818449==      possibly lost: 0 bytes in 0 blocks
+==1818449==    still reachable: 1 bytes in 1 blocks
+==1818449==         suppressed: 0 bytes in 0 blocks
+==1818449== 
+==1818449== For lists of detected and suppressed errors, rerun with: -s
+==1818449== ERROR SUMMARY: 1 errors from 1 contexts (suppressed: 0 from 0)

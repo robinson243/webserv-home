@@ -92,30 +92,37 @@ void HttpResponse::addBodyResponse(std::string &e) {
 	_body.insert(_body.end(), e.begin(), e.end());
 }
 
-void HttpResponse::addHeadersResponse(const std::string &key,
-									  const std::string &e) {
-	_headers[key] = e;
+static std::string toLowerHeader(std::string s) {
+	for (size_t i = 0; i < s.size(); ++i)
+		s[i] =
+			static_cast<char>(std::tolower(static_cast<unsigned char>(s[i])));
+	return s;
 }
 
+void HttpResponse::addHeadersResponse(const std::string &key,
+									  const std::string &e) {
+	_headers[toLowerHeader(key)] = e;
+}
 void HttpResponse::setBody(const std::vector<unsigned char> &body) {
 	_body = body;
 }
 
 std::string HttpResponse::serialize() {
-    std::string final;
-    std::string body(_body.begin(), _body.end());
+	std::string final;
+	std::string body(_body.begin(), _body.end());
 
-    std::ostringstream lenOss;
-    lenOss << body.size();
-    _headers["content-length"] = lenOss.str();
+	std::ostringstream lenOss;
+	lenOss << body.size();
+	_headers["content-length"] = lenOss.str();
 
-    std::ostringstream oss;
-    oss << _code;
-    final = _version + " " + oss.str() + " " + _message + "\r\n";
-    for (std::map<std::string, std::string>::iterator it = _headers.begin();
-         it != _headers.end(); ++it) {
-        final += it->first + ": " + it->second + "\r\n";
-    }
-    final += "\r\n" + body;
-    return final;
+	std::ostringstream oss;
+	oss << _code;
+	final = _version + " " + oss.str() + " " + _message + "\r\n";
+	for (std::map<std::string, std::string>::iterator it = _headers.begin();
+		 it != _headers.end();
+		 ++it) {
+		final += it->first + ": " + it->second + "\r\n";
+	}
+	final += "\r\n" + body;
+	return final;
 }

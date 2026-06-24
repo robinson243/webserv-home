@@ -104,13 +104,11 @@ void freeEnvp(char **envp, size_t size) {
 HttpResponse handleCgi(const HttpRequest &req,
 					   const LocationConfig &loc,
 					   const std::string &ext) {
-
 	std::string REQUEST_METHOD = req.getRequest().at("method");
 	std::string interpretor = loc.getCgiExtension().at(ext);
 	std::string SCRIPT_NAME;
 	std::string scriptPath;
 	std::string uri = req.getRequest().at("uri");
-
 
 	size_t pos = uri.find("?");
 	if (pos == std::string::npos)
@@ -128,7 +126,6 @@ HttpResponse handleCgi(const HttpRequest &req,
 	s << req.getBody().size();
 	std::string CONTENT_LENGTH = s.str();
 
-
 	if (!loc.getPath().empty()) {
 		bool isPrefix =
 			SCRIPT_NAME.size() >= loc.getPath().size()
@@ -136,7 +133,6 @@ HttpResponse handleCgi(const HttpRequest &req,
 
 		bool hasValidBoundary = SCRIPT_NAME.size() == loc.getPath().size()
 								|| SCRIPT_NAME[loc.getPath().size()] == '/';
-
 
 		if (isPrefix && hasValidBoundary) {
 			std::string relativePath = SCRIPT_NAME.substr(loc.getPath().size());
@@ -156,10 +152,10 @@ HttpResponse handleCgi(const HttpRequest &req,
 		return makeResponse(500);
 	}
 
-	std::string CONTENT_TYPE = "text/plain";
+	std::string CONTENT_TYPE;
 	std::map<std::string, std::string>::const_iterator itCt =
-		req.getRequest().find("content-type");
-	if (itCt != req.getRequest().end() && !itCt->second.empty())
+		req.getHeaders().find("content-type");
+	if (itCt != req.getHeaders().end() && !itCt->second.empty())
 		CONTENT_TYPE = itCt->second;
 
 	std::string SERVER_PROTOCOL = "HTTP/1.1";
@@ -172,7 +168,8 @@ HttpResponse handleCgi(const HttpRequest &req,
 	envpVec.push_back("REQUEST_METHOD=" + REQUEST_METHOD);
 	envpVec.push_back("QUERY_STRING=" + QUERY_STRING);
 	envpVec.push_back("CONTENT_LENGTH=" + CONTENT_LENGTH);
-	envpVec.push_back("CONTENT_TYPE=" + CONTENT_TYPE);
+	if (!CONTENT_TYPE.empty())
+		envpVec.push_back("CONTENT_TYPE=" + CONTENT_TYPE);
 	envpVec.push_back("SCRIPT_NAME=" + SCRIPT_NAME);
 	envpVec.push_back("PATH_INFO=" + SCRIPT_NAME);
 	envpVec.push_back("PATH_TRANSLATED=" + scriptPath);
@@ -215,7 +212,6 @@ HttpResponse handleCgi(const HttpRequest &req,
 					 (char *)scriptPath.c_str(),
 					 NULL };
 
-
 	int pipefdIn[2];
 	int pipefdOut[2];
 	pid_t pid;
@@ -230,18 +226,12 @@ HttpResponse handleCgi(const HttpRequest &req,
 		return freeEnvp(envp, envpVec.size()), makeResponse(500);
 	}
 
-	int saved_stdin = dup(STDIN_FILENO);
-	int saved_stdout = dup(STDOUT_FILENO);
-
-
 	pid = fork();
 	if (pid == -1) {
 		close(pipefdIn[0]);
 		close(pipefdIn[1]);
 		close(pipefdOut[0]);
 		close(pipefdOut[1]);
-		close(saved_stdin);
-		close(saved_stdout);
 		return freeEnvp(envp, envpVec.size()), makeResponse(500);
 	}
 
@@ -251,19 +241,15 @@ HttpResponse handleCgi(const HttpRequest &req,
 		if (dup2(pipefdOut[1], STDOUT_FILENO) == -1)
 			_exit(1);
 
-		close(saved_stdin);
-		close(saved_stdout);
 		close(pipefdIn[0]);
 		close(pipefdIn[1]);
 		close(pipefdOut[0]);
 		close(pipefdOut[1]);
 
-
 		execve(interpretor.c_str(), argv, envp);
 
 		_exit(1);
 	}
-
 
 	close(pipefdIn[0]);
 	close(pipefdOut[1]);
@@ -284,10 +270,7 @@ HttpResponse handleCgi(const HttpRequest &req,
 				close(pipefdOut[0]);
 				kill(pid, SIGKILL);
 				waitpid(pid, NULL, 0);
-				dup2(saved_stdin, STDIN_FILENO);
-				dup2(saved_stdout, STDOUT_FILENO);
-				close(saved_stdin);
-				close(saved_stdout);
+
 				return freeEnvp(envp, envpVec.size()), makeResponse(500);
 			}
 
@@ -296,10 +279,7 @@ HttpResponse handleCgi(const HttpRequest &req,
 				close(pipefdOut[0]);
 				kill(pid, SIGKILL);
 				waitpid(pid, NULL, 0);
-				dup2(saved_stdin, STDIN_FILENO);
-				dup2(saved_stdout, STDOUT_FILENO);
-				close(saved_stdin);
-				close(saved_stdout);
+
 				return freeEnvp(envp, envpVec.size()), makeResponse(500);
 			}
 
@@ -319,10 +299,6 @@ HttpResponse handleCgi(const HttpRequest &req,
 			close(pipefdOut[0]);
 			kill(pid, SIGKILL);
 			waitpid(pid, NULL, 0);
-			dup2(saved_stdin, STDIN_FILENO);
-			dup2(saved_stdout, STDOUT_FILENO);
-			close(saved_stdin);
-			close(saved_stdout);
 			return freeEnvp(envp, envpVec.size()), makeResponse(504);
 		}
 
@@ -331,10 +307,6 @@ HttpResponse handleCgi(const HttpRequest &req,
 			close(pipefdOut[0]);
 			kill(pid, SIGKILL);
 			waitpid(pid, NULL, 0);
-			dup2(saved_stdin, STDIN_FILENO);
-			dup2(saved_stdout, STDOUT_FILENO);
-			close(saved_stdin);
-			close(saved_stdout);
 			return freeEnvp(envp, envpVec.size()), makeResponse(500);
 		}
 		if (n == 0)
@@ -354,15 +326,7 @@ HttpResponse handleCgi(const HttpRequest &req,
 	int status;
 	waitpid(pid, &status, 0);
 
-	if (WIFEXITED(status))
-	if (WIFSIGNALED(status))
-
 	freeEnvp(envp, envpVec.size());
-
-	dup2(saved_stdin, STDIN_FILENO);
-	dup2(saved_stdout, STDOUT_FILENO);
-	close(saved_stdin);
-	close(saved_stdout);
 
 	if (WIFEXITED(status) && WEXITSTATUS(status) != 0) {
 		return makeResponse(502);

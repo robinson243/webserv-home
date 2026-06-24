@@ -705,20 +705,23 @@ HttpResponse handleRequest(const HttpRequest &req,
 		if (req.getBody().size() > effectiveMaxBody)
 			return makeResponse(413);
 	}
+	bool isCgi = false;
+	std::string ext;
+
 	if (dotpos != std::string::npos) {
-		std::string ext = path.substr(dotpos);
+		ext = path.substr(dotpos);
 		const std::map<std::string, std::string> &cgiExt =
 			loc.getCgiExtension();
+		isCgi = (cgiExt.find(ext) != cgiExt.end());
+	}
 
-		if (cgiExt.find(ext) != cgiExt.end() && method == "POST") {
-			HttpResponse cgiResp = handleCgi(req, loc, ext);
-			return cgiResp;
+	if (isCgi) {
+		if (method != "GET" && method != "POST") {
+			response = makeResponse(405);
+			response.addHeadersResponse("allow", "GET, POST");
+			return response;
 		}
-
-		if (cgiExt.find(ext) != cgiExt.end() && method == "GET") {
-			HttpResponse cgiResp = handleCgi(req, loc, ext);
-			return cgiResp;
-		}
+		return handleCgi(req, loc, ext);
 	}
 
 	if (method == "GET") {
