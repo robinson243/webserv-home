@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   LocationConfig.cpp                                 :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: oamairi <oamairi@student.42.fr>            +#+  +:+       +#+        */
+/*   By: ydembele <ydembele@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/04/14 13:44:36 by romukena          #+#    #+#             */
-/*   Updated: 2026/06/16 12:41:11 by oamairi          ###   ########.fr       */
+/*   Updated: 2026/06/24 16:16:51 by ydembele         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -16,7 +16,7 @@
 #include <cstdlib>
 
 LocationConfig::LocationConfig()
-	: _autoindex(false), _has_autoindex(false), _max_body(std::numeric_limits<std::size_t>::max()),
+	: _autoindex(false), _has_autoindex(false), _max_body(1024 * 1024),
 	  _has_max_size(false), _return_code(-1), _return_url(""), _has_return(false), _root(""), _path(""), _upload_path(""),
 	  _alias("") {
 }
@@ -65,18 +65,18 @@ LocationConfig parseLocation(std::vector<Token>::iterator &it, std::vector<Token
 			location.setUploadPath(parseSingleValueDirective(it, end, it->value));
 		}
 		else if (*it == "client_max_body_size")
-    {
+    	{
 			if (location.gethasmaxsize() == true)
 				throw std::runtime_error("Multiple definitions of body_size");
 			location.setMaxBody(findSize(it, end));
 			location.sethasmaxsize(true);
 		}
 		else if (*it == "cgi_extension")
-    	parseCgiExtension(it, end, location);
+    		parseCgiExtension(it, end, location);
 		else if (*it == "return")
-    	parseReturn(it, end, location);
+    		parseReturn(it, end, location);
 		else
-    	throw std::runtime_error("Unknown directive in location");
+    		throw std::runtime_error("Unknown directive in location");
 	}
 	if (it == end)
 		throw std::runtime_error("Missing bracket");

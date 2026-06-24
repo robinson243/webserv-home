@@ -6,7 +6,7 @@
 /*   By: ydembele <ydembele@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/04/16 13:40:39 by ydembele          #+#    #+#             */
-/*   Updated: 2026/06/24 15:57:53 by ydembele         ###   ########.fr       */
+/*   Updated: 2026/06/24 16:16:29 by ydembele         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -22,7 +22,7 @@
 ServerConfig::ServerConfig()
 {
 	_root = "";
-	_clientMaxBodySize = std::numeric_limits<std::size_t>::max();
+	_clientMaxBodySize = 1024 * 1024;
 	_hasMaxSize = false;
 }
 
