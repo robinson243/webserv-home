@@ -650,69 +650,34 @@ HttpResponse handleRequest(const HttpRequest &req,
 						   const std::vector<ServerConfig> &servers) {
 	HttpResponse response;
 
-	std::cerr << "\n========== handleRequest ==========" << std::endl;
-	std::cerr << "[REQ] valid=" << req.getValid() << std::endl;
-
 	const std::map<std::string, std::string> &r = req.getRequest();
-	std::map<std::string, std::string>::const_iterator itMethodDbg =
-		r.find("method");
-	std::map<std::string, std::string>::const_iterator itUriDbg = r.find("uri");
 
-	if (itMethodDbg != r.end())
-		std::cerr << "[REQ] method=" << itMethodDbg->second << std::endl;
-	else
-		std::cerr << "[REQ] method=<missing>" << std::endl;
-
-	if (itUriDbg != r.end())
-		std::cerr << "[REQ] uri=" << itUriDbg->second << std::endl;
-	else
-		std::cerr << "[REQ] uri=<missing>" << std::endl;
-
-	std::map<std::string, std::string>::const_iterator itCl =
-		r.find("content-length");
-	if (itCl != r.end())
-		std::cerr << "[REQ] content-length=" << itCl->second << std::endl;
-	else
-		std::cerr << "[REQ] content-length=<missing>" << std::endl;
 
 	const ServerConfig &server = selectServer(servers, req);
-	std::cerr << "[ROUTE] server selected" << std::endl;
 
 	if (!req.getValid()) {
-		std::cerr << "[ERROR] invalid request, code=" << req.getCode()
-				  << std::endl;
 		response = makeResponse(req.getCode());
-		std::cerr << "[RESP] status=" << response.getCode() << std::endl;
 		return response;
 	}
 
 	int valLocation = findLocation(server, req);
-	std::cerr << "[ROUTE] findLocation=" << valLocation << std::endl;
 	if (valLocation == -1) {
-		std::cerr << "[ERROR] no matching location -> 404" << std::endl;
 		response = makeResponse(404);
-		std::cerr << "[RESP] status=" << response.getCode() << std::endl;
 		return response;
 	}
 
 	const std::vector<LocationConfig> &locations = server.getLocations();
 	const LocationConfig &loc = locations[valLocation];
-	std::cerr << "[ROUTE] location matched index=" << valLocation << std::endl;
 
 	if (loc.getCode() >= 300 && loc.getCode() < 400 && !loc.getUrl().empty()) {
-		std::cerr << "[ROUTE] redirect code=" << loc.getCode()
-				  << " url=" << loc.getUrl() << std::endl;
 		HttpResponse resp = makeResponse(loc.getCode());
 		resp.addHeadersResponse("location", loc.getUrl());
-		std::cerr << "[RESP] status=" << resp.getCode() << std::endl;
 		return resp;
 	}
 
 	std::map<std::string, std::string>::const_iterator it = r.find("method");
 	if (it == r.end()) {
-		std::cerr << "[ERROR] method missing -> 400" << std::endl;
 		response = makeResponse(400);
-		std::cerr << "[RESP] status=" << response.getCode() << std::endl;
 		return response;
 	}
 
@@ -720,12 +685,9 @@ HttpResponse handleRequest(const HttpRequest &req,
 	std::set<std::string> allowMeth =
 		defaultAllowedMethodsIfEmpty(loc.getAllowMethods());
 
-	std::cerr << "[REQ] method final=" << method << std::endl;
 
 	if (!isImplementedMethod(method)) {
-		std::cerr << "[ERROR] method not implemented -> 501" << std::endl;
 		response = makeResponse(501);
-		std::cerr << "[RESP] status=" << response.getCode() << std::endl;
 		return response;
 	}
 
@@ -734,20 +696,14 @@ HttpResponse handleRequest(const HttpRequest &req,
 	std::string path = (qpos == std::string::npos) ? uri : uri.substr(0, qpos);
 	size_t dotpos = path.rfind(".");
 
-	std::cerr << "[REQ] path=" << path << std::endl;
 
-	std::cerr << "[METHOD] allowed=";
 	for (std::set<std::string>::iterator mit = allowMeth.begin();
 		 mit != allowMeth.end();
 		 ++mit)
-		std::cerr << *mit << " ";
-	std::cerr << std::endl;
 
 	if (allowMeth.find(method) == allowMeth.end()) {
-		std::cerr << "[ERROR] method not allowed -> 405" << std::endl;
 		response = makeResponse(405);
 		response.addHeadersResponse("allow", buildAllowHeader(allowMeth));
-		std::cerr << "[RESP] status=" << response.getCode() << std::endl;
 		return response;
 	}
 
@@ -756,60 +712,41 @@ HttpResponse handleRequest(const HttpRequest &req,
 		const std::map<std::string, std::string> &cgiExt =
 			loc.getCgiExtension();
 
-		std::cerr << "[CGI] ext=" << ext << std::endl;
-		std::cerr << "[CGI] configured=" << (cgiExt.find(ext) != cgiExt.end())
-				  << std::endl;
 
 		if (cgiExt.find(ext) != cgiExt.end() && method == "POST") {
-			std::cerr << "[CGI] POST CGI branch" << std::endl;
 
 			size_t bodySize = req.getBody().size();
 			size_t maxBodySize = 1000000;
 
-			std::cerr << "[POST-CGI-CHECK] uri=" << path << " content_length="
-					  << (itCl != r.end() ? itCl->second : "<missing>")
-					  << " body_size=" << req.getBody().size()
-					  << " max=" << maxBodySize << std::endl;
 
 			if (bodySize > maxBodySize) {
-				std::cerr << "[ERROR] body too large -> 413" << std::endl;
 				HttpResponse resp = makeResponse(413);
-				std::cerr << "[RESP] status=" << resp.getCode() << std::endl;
 				return resp;
 			}
 
 			HttpResponse cgiResp = handleCgi(req, loc, ext);
-			std::cerr << "[RESP] status=" << cgiResp.getCode() << std::endl;
 			return cgiResp;
 		}
 
 		if (cgiExt.find(ext) != cgiExt.end() && method == "GET") {
-			std::cerr << "[CGI] GET CGI branch" << std::endl;
 			HttpResponse cgiResp = handleCgi(req, loc, ext);
-			std::cerr << "[RESP] status=" << cgiResp.getCode() << std::endl;
 			return cgiResp;
 		}
 	}
 
 	if (method == "GET") {
-		std::cerr << "[DISPATCH] GET" << std::endl;
 		response = Get(req, server);
 	} else if (method == "HEAD") {
-		std::cerr << "[DISPATCH] HEAD" << std::endl;
 		response = Get(req, server);
 		response.setBody(std::vector<unsigned char>());
 		response.addHeadersResponse("connection", "close");
 	} else if (method == "POST") {
-		std::cerr << "[DISPATCH] POST" << std::endl;
 		response = Post(req, server);
 	} else if (method == "DELETE") {
-		std::cerr << "[DISPATCH] DELETE" << std::endl;
 		response = Delete(req, server);
 	} else {
-		std::cerr << "[ERROR] fallback 501" << std::endl;
 		response = makeResponse(501);
 	}
 
-	std::cerr << "[RESP] final status=" << response.getCode() << std::endl;
 	return response;
 }

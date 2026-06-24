@@ -246,9 +246,6 @@ std::string HttpRequest::decodeChunkedBody(std::stringstream &str) {
 		char *pEnd;
 		long chunkSize = std::strtol(sizeLine.c_str(), &pEnd, 16);
 
-		std::cerr << "[CHUNK] size_line='" << sizeLine
-				  << "' chunk_size=" << chunkSize << " eof=" << str.eof()
-				  << " good=" << str.good() << std::endl;
 
 		if (*pEnd != '\0' || chunkSize < 0) {
 			_code = 400;
@@ -269,10 +266,6 @@ std::string HttpRequest::decodeChunkedBody(std::stringstream &str) {
 			str.read(&chunkData[totalRead], chunkSize - totalRead);
 			std::streamsize n = str.gcount();
 
-			std::cerr << "[CHUNK] read_count=" << n
-					  << " expected_remaining=" << (chunkSize - totalRead)
-					  << " total=" << (totalRead + n) << "/" << chunkSize
-					  << std::endl;
 
 			if (n <= 0) {
 				_code = 400;
@@ -308,7 +301,6 @@ static std::string toLowerCopy(std::string s) {
 bool HttpRequest::isRawRequestComplete(const std::string &req) {
 	size_t headerEnd = req.find("\r\n\r\n");
 	if (headerEnd == std::string::npos) {
-		std::cerr << "[REQCHK] headers incomplete" << std::endl;
 		return false;
 	}
 
@@ -321,7 +313,6 @@ bool HttpRequest::isRawRequestComplete(const std::string &req) {
 		while (true) {
 			size_t lineEnd = body.find("\r\n", pos);
 			if (lineEnd == std::string::npos) {
-				std::cerr << "[REQCHK] chunk size line incomplete" << std::endl;
 				return false;
 			}
 
@@ -333,8 +324,6 @@ bool HttpRequest::isRawRequestComplete(const std::string &req) {
 			char *endptr = NULL;
 			long chunkSize = std::strtol(sizeLine.c_str(), &endptr, 16);
 
-			std::cerr << "[REQCHK] size_line='" << sizeLine
-					  << "' chunk_size=" << chunkSize << std::endl;
 
 			if (*endptr != '\0' || chunkSize < 0)
 				return false;
@@ -344,36 +333,24 @@ bool HttpRequest::isRawRequestComplete(const std::string &req) {
 			if (chunkSize == 0) {
 				if (body.size() >= pos + 2
 					&& body.compare(pos, 2, "\r\n") == 0) {
-					std::cerr << "[REQCHK] full chunked request received"
-							  << std::endl;
 					return true;
 				}
 
 				size_t trailerEnd = body.find("\r\n\r\n", pos);
 				if (trailerEnd != std::string::npos) {
-					std::cerr << "[REQCHK] full chunked request received with "
-								 "trailers"
-							  << std::endl;
 					return true;
 				}
 
-				std::cerr << "[REQCHK] last chunk seen but final CRLF missing"
-						  << std::endl;
 				return false;
 			}
 
 			if (body.size() < pos + static_cast<size_t>(chunkSize) + 2) {
-				std::cerr << "[REQCHK] chunk data incomplete"
-						  << " need=" << (pos + chunkSize + 2)
-						  << " have=" << body.size() << std::endl;
 				return false;
 			}
 
 			pos += chunkSize;
 
 			if (body.compare(pos, 2, "\r\n") != 0) {
-				std::cerr << "[REQCHK] chunk CRLF missing after data"
-						  << std::endl;
 				return false;
 			}
 
@@ -391,24 +368,17 @@ bool HttpRequest::isRawRequestComplete(const std::string &req) {
 		std::string value = headers.substr(start, end - start);
 		long contentLength = std::strtol(value.c_str(), NULL, 10);
 
-		std::cerr << "[REQCHK] content-length=" << contentLength
-				  << " body_have=" << body.size() << std::endl;
 
 		return contentLength >= 0
 			   && body.size() >= static_cast<size_t>(contentLength);
 	}
 
-	std::cerr << "[REQCHK] no body framing header, request considered complete"
-			  << std::endl;
 	return true;
 }
 
 void HttpRequest::addHttpRequest(std::string &req) {
-	std::cerr << "[REQCHK] raw_size=" << req.size() << std::endl;
 
 	if (!isRawRequestComplete(req)) {
-		std::cerr << "[REQCHK] incomplete raw request -> stop parsing"
-				  << std::endl;
 		return;
 	}
 	std::stringstream str(req);
@@ -423,8 +393,6 @@ void HttpRequest::addHttpRequest(std::string &req) {
 			 _headers.begin();
 		 it != _headers.end();
 		 ++it)
-		std::cerr << "[HDR] '" << it->first << "' = '" << it->second << "'"
-				  << std::endl;
 	if (!findHostInHeaders()) {
 		_code = 400;
 		return;
@@ -450,12 +418,4 @@ void HttpRequest::addHttpRequest(std::string &req) {
 		_code = 200;
 		makeTrue();
 	}
-	std::cerr << "[PARSE] content-length="
-			  << (_headers.count("content-length") ? _headers["content-length"]
-												   : "<missing>")
-			  << " transfer-encoding="
-			  << (_headers.count("transfer-encoding")
-					  ? _headers["transfer-encoding"]
-					  : "<missing>")
-			  << " body_size=" << body.size() << std::endl;
 }

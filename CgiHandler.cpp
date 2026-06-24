@@ -104,7 +104,6 @@ void freeEnvp(char **envp, size_t size) {
 HttpResponse handleCgi(const HttpRequest &req,
 					   const LocationConfig &loc,
 					   const std::string &ext) {
-	std::cerr << "\n========== handleCgi ==========" << std::endl;
 
 	std::string REQUEST_METHOD = req.getRequest().at("method");
 	std::string interpretor = loc.getCgiExtension().at(ext);
@@ -112,10 +111,6 @@ HttpResponse handleCgi(const HttpRequest &req,
 	std::string scriptPath;
 	std::string uri = req.getRequest().at("uri");
 
-	std::cerr << "[CGI] method=" << REQUEST_METHOD << std::endl;
-	std::cerr << "[CGI] uri=" << uri << std::endl;
-	std::cerr << "[CGI] ext=" << ext << std::endl;
-	std::cerr << "[CGI] interpreter(from config)=" << interpretor << std::endl;
 
 	size_t pos = uri.find("?");
 	if (pos == std::string::npos)
@@ -133,10 +128,6 @@ HttpResponse handleCgi(const HttpRequest &req,
 	s << req.getBody().size();
 	std::string CONTENT_LENGTH = s.str();
 
-	std::cerr << "[CGI] script_name=" << SCRIPT_NAME << std::endl;
-	std::cerr << "[CGI] query_string=" << QUERY_STRING << std::endl;
-	std::cerr << "[CGI] req body size=" << req.getBody().size() << std::endl;
-	std::cerr << "[CGI] content_length=" << CONTENT_LENGTH << std::endl;
 
 	if (!loc.getPath().empty()) {
 		bool isPrefix =
@@ -146,11 +137,6 @@ HttpResponse handleCgi(const HttpRequest &req,
 		bool hasValidBoundary = SCRIPT_NAME.size() == loc.getPath().size()
 								|| SCRIPT_NAME[loc.getPath().size()] == '/';
 
-		std::cerr << "[CGI] loc.path=" << loc.getPath() << std::endl;
-		std::cerr << "[CGI] loc.root=" << loc.getRoot() << std::endl;
-		std::cerr << "[CGI] loc.alias=" << loc.getAlias() << std::endl;
-		std::cerr << "[CGI] isPrefix=" << isPrefix
-				  << " hasValidBoundary=" << hasValidBoundary << std::endl;
 
 		if (isPrefix && hasValidBoundary) {
 			std::string relativePath = SCRIPT_NAME.substr(loc.getPath().size());
@@ -160,20 +146,13 @@ HttpResponse handleCgi(const HttpRequest &req,
 
 			if (!loc.getAlias().empty()) {
 				scriptPath = loc.getAlias() + relativePath;
-				std::cerr << "[CGI] relativePath=" << relativePath << std::endl;
-				std::cerr << "[CGI] scriptPath via alias=" << scriptPath
-						  << std::endl;
 			} else {
 				scriptPath = loc.getRoot() + relativePath;
-				std::cerr << "[CGI] relativePath=" << relativePath << std::endl;
-				std::cerr << "[CGI] scriptPath via root=" << scriptPath
-						  << std::endl;
 			}
 		}
 	}
 
 	if (scriptPath.empty()) {
-		std::cerr << "[CGI][ERROR] scriptPath empty -> 500" << std::endl;
 		return makeResponse(500);
 	}
 
@@ -229,7 +208,6 @@ HttpResponse handleCgi(const HttpRequest &req,
 	for (size_t i = 0; i < envpVec.size(); ++i) {
 		envp[i] = new char[envpVec[i].size() + 1];
 		strcpy(envp[i], envpVec[i].c_str());
-		std::cerr << "[CGI][ENV] " << envpVec[i] << std::endl;
 	}
 	envp[envpVec.size()] = NULL;
 
@@ -237,22 +215,16 @@ HttpResponse handleCgi(const HttpRequest &req,
 					 (char *)scriptPath.c_str(),
 					 NULL };
 
-	std::cerr << "[CGI][ARGV] argv0=" << argv[0] << std::endl;
-	std::cerr << "[CGI][ARGV] argv1=" << argv[1] << std::endl;
 
 	int pipefdIn[2];
 	int pipefdOut[2];
 	pid_t pid;
 
 	if (pipe(pipefdIn) == -1) {
-		std::cerr << "[CGI][ERROR] pipe stdin failed errno=" << errno
-				  << " msg=" << strerror(errno) << std::endl;
 		return freeEnvp(envp, envpVec.size()), makeResponse(500);
 	}
 
 	if (pipe(pipefdOut) == -1) {
-		std::cerr << "[CGI][ERROR] pipe stdout failed errno=" << errno
-				  << " msg=" << strerror(errno) << std::endl;
 		close(pipefdIn[0]);
 		close(pipefdIn[1]);
 		return freeEnvp(envp, envpVec.size()), makeResponse(500);
@@ -261,14 +233,9 @@ HttpResponse handleCgi(const HttpRequest &req,
 	int saved_stdin = dup(STDIN_FILENO);
 	int saved_stdout = dup(STDOUT_FILENO);
 
-	std::cerr << "[CGI] pipes created in=(" << pipefdIn[0] << "," << pipefdIn[1]
-			  << ") out=(" << pipefdOut[0] << "," << pipefdOut[1] << ")"
-			  << std::endl;
 
 	pid = fork();
 	if (pid == -1) {
-		std::cerr << "[CGI][ERROR] fork failed errno=" << errno
-				  << " msg=" << strerror(errno) << std::endl;
 		close(pipefdIn[0]);
 		close(pipefdIn[1]);
 		close(pipefdOut[0]);
@@ -291,18 +258,12 @@ HttpResponse handleCgi(const HttpRequest &req,
 		close(pipefdOut[0]);
 		close(pipefdOut[1]);
 
-		std::cerr << "[CGI][EXEC] path=" << interpretor << std::endl;
-		std::cerr << "[CGI][EXEC] argv0=" << argv[0] << std::endl;
-		std::cerr << "[CGI][EXEC] argv1=" << argv[1] << std::endl;
 
 		execve(interpretor.c_str(), argv, envp);
 
-		std::cerr << "[CGI][EXEC][ERROR] errno=" << errno
-				  << " msg=" << strerror(errno) << std::endl;
 		_exit(1);
 	}
 
-	std::cerr << "[CGI] child pid=" << pid << std::endl;
 
 	close(pipefdIn[0]);
 	close(pipefdOut[1]);
@@ -310,8 +271,6 @@ HttpResponse handleCgi(const HttpRequest &req,
 	const std::string &method = req.getRequest().at("method");
 	if (method == "POST" && !req.getBody().empty()) {
 		const std::vector<unsigned char> &body = req.getBody();
-		std::cerr << "[CGI][WRITE] trying to write body bytes=" << body.size()
-				  << std::endl;
 
 		size_t totalWritten = 0;
 		while (totalWritten < body.size()) {
@@ -321,8 +280,6 @@ HttpResponse handleCgi(const HttpRequest &req,
 				body.size() - totalWritten);
 
 			if (written == -1) {
-				std::cerr << "[CGI][ERROR] write failed errno=" << errno
-						  << " msg=" << strerror(errno) << std::endl;
 				close(pipefdIn[1]);
 				close(pipefdOut[0]);
 				kill(pid, SIGKILL);
@@ -335,8 +292,6 @@ HttpResponse handleCgi(const HttpRequest &req,
 			}
 
 			if (written == 0) {
-				std::cerr << "[CGI][ERROR] write returned 0 unexpectedly"
-						  << std::endl;
 				close(pipefdIn[1]);
 				close(pipefdOut[0]);
 				kill(pid, SIGKILL);
@@ -349,9 +304,6 @@ HttpResponse handleCgi(const HttpRequest &req,
 			}
 
 			totalWritten += static_cast<size_t>(written);
-			std::cerr << "[CGI][WRITE] chunk=" << written
-					  << " total=" << totalWritten << "/" << body.size()
-					  << std::endl;
 		}
 	}
 	close(pipefdIn[1]);
@@ -364,8 +316,6 @@ HttpResponse handleCgi(const HttpRequest &req,
 
 	while (true) {
 		if (time(NULL) - start > CGI_TIMEOUT) {
-			std::cerr << "[CGI][ERROR] timeout after " << CGI_TIMEOUT
-					  << "s -> 504" << std::endl;
 			close(pipefdOut[0]);
 			kill(pid, SIGKILL);
 			waitpid(pid, NULL, 0);
@@ -378,8 +328,6 @@ HttpResponse handleCgi(const HttpRequest &req,
 
 		n = read(pipefdOut[0], buf, sizeof(buf));
 		if (n == -1) {
-			std::cerr << "[CGI][ERROR] read failed errno=" << errno
-					  << " msg=" << strerror(errno) << std::endl;
 			close(pipefdOut[0]);
 			kill(pid, SIGKILL);
 			waitpid(pid, NULL, 0);
@@ -392,32 +340,22 @@ HttpResponse handleCgi(const HttpRequest &req,
 		if (n == 0)
 			break;
 
-		std::cerr << "[CGI][READ] chunk=" << n << std::endl;
 		cgiOutput.insert(cgiOutput.end(), buf, buf + n);
 	}
 
 	close(pipefdOut[0]);
 
-	std::cerr << "[CGI][READ] total output bytes=" << cgiOutput.size()
-			  << std::endl;
 	if (!cgiOutput.empty()) {
 		std::string preview(
 			cgiOutput.begin(),
 			cgiOutput.begin() + std::min((size_t)200, cgiOutput.size()));
-		std::cerr << "[CGI][READ] preview=" << preview << std::endl;
 	}
 
 	int status;
 	waitpid(pid, &status, 0);
 
-	std::cerr << "[CGI][WAIT] raw status=" << status << std::endl;
-	std::cerr << "[CGI][WAIT] exited=" << WIFEXITED(status) << std::endl;
 	if (WIFEXITED(status))
-		std::cerr << "[CGI][WAIT] exit code=" << WEXITSTATUS(status)
-				  << std::endl;
-	std::cerr << "[CGI][WAIT] signaled=" << WIFSIGNALED(status) << std::endl;
 	if (WIFSIGNALED(status))
-		std::cerr << "[CGI][WAIT] signal=" << WTERMSIG(status) << std::endl;
 
 	freeEnvp(envp, envpVec.size());
 
@@ -427,10 +365,8 @@ HttpResponse handleCgi(const HttpRequest &req,
 	close(saved_stdout);
 
 	if (WIFEXITED(status) && WEXITSTATUS(status) != 0) {
-		std::cerr << "[CGI][ERROR] child exit != 0 -> 502" << std::endl;
 		return makeResponse(502);
 	}
 
-	std::cerr << "[CGI] parseCgiOutput()" << std::endl;
 	return parseCgiOutput(cgiOutput);
 }
