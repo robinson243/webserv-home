@@ -6,7 +6,7 @@
 /*   By: oamairi <oamairi@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/04/30 18:32:40 by oamairi           #+#    #+#             */
-/*   Updated: 2026/06/24 14:45:41 by oamairi          ###   ########.fr       */
+/*   Updated: 2026/06/24 15:15:55 by oamairi          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -97,8 +97,8 @@ void	EventLoop::run()
 				}
 				else
 				{
-					char buffer[4096];
-					int read = recv(_fds[i].fd, buffer, 4096, 0);
+					char buffer[131072];
+					int read = recv(_fds[i].fd, buffer, 131072, 0);
 					if (read <= 0)
 					{
 						if (read < 0)
