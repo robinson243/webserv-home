@@ -6,7 +6,7 @@
 /*   By: ydembele <ydembele@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/04/16 13:40:39 by ydembele          #+#    #+#             */
-/*   Updated: 2026/06/24 16:34:47 by ydembele         ###   ########.fr       */
+/*   Updated: 2026/06/25 16:58:42 by ydembele         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -373,7 +373,7 @@ void findPort(std::vector<Token>::iterator &it, std::vector<Token>::iterator end
         server.setListenHost("0.0.0.0");
     }
 	if (!isNumber(portStr))
-    	throw std::runtime_error("client_max_body_size: Invalid body size");
+    	throw std::runtime_error("listen: invalid port");
     long port = std::strtol(portStr.c_str(), NULL, 10);
     if (errno == ERANGE || port < 1 || port > 65535)
         throw std::runtime_error("listen: invalid port range [1-65535]");
