@@ -6,7 +6,7 @@
 /*   By: oamairi <oamairi@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/04/30 18:32:40 by oamairi           #+#    #+#             */
-/*   Updated: 2026/06/24 15:15:55 by oamairi          ###   ########.fr       */
+/*   Updated: 2026/06/25 15:12:08 by oamairi          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -58,6 +58,11 @@ void	EventLoop::run()
 	{
 		if (poll(_fds.data(), _fds.size(), -1) == -1)
 		{
+			if (errno == EINTR)
+			{
+				std::cout << "\nwebserv killed by SIGINT\nGoodbye !\n";
+				break;
+			}
 			perror("poll error");
 			break;
 		}
@@ -102,7 +107,12 @@ void	EventLoop::run()
 					if (read <= 0)
 					{
 						if (read < 0)
-							perror("recv error");
+						{
+							if (errno == ECONNRESET)
+								std::cout << "Connection reset by peer, fd : " << _fds[i].fd << "\n";
+							else
+								perror("recv error");
+						}
 						close(_fds[i].fd);
 						_buffers.erase(_fds[i].fd);
 						_clientFdToConfig.erase(_fds[i].fd);
