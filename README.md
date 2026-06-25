@@ -99,7 +99,8 @@ valgrind --track-fds=yes ./webserv exemple.conf
 ```
 
 ## Resources
-
+cppreference.com
+geeksforgeeks
 
 
 **AI usage:** We used AI to help distribute the workload evenly between team members, to generate `.conf` files for testing various configurations, and to write test cases (curl commands, edge cases, stress scenarios).
