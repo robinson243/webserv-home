@@ -1,4 +1,5 @@
-*This project has been created as part of the 42 curriculum by login1, login2, login3.*
+*This project has been created as part of the 42 curriculum by romukena, oamairi, ydembele.*
+
 
 ## Description
 
@@ -20,7 +21,7 @@ EventLoop                       (poll(), accept(), recv(), send())
     ├── HttpRequest              (parse raw HTTP)
     │       │
     │       ▼
-    │   RequestHandler          (routing: GET / POST / DELETE)
+    │   RequestHandler          (GET / POST / DELETE)
     │       │
     │       ▼
     │   HttpResponse            (serialize and send)
@@ -38,7 +39,7 @@ EventLoop                       (poll(), accept(), recv(), send())
 | `Server.cpp/hpp` | Creates socket, bind, listen, non-blocking mode |
 | `EventLoop.cpp/hpp` | Main loop: poll, client management, dispatching |
 | `HttpRequest.cpp/hpp` | Parses raw HTTP request |
-| `RequestHandler.cpp/hpp` | Routing and business logic |
+| `RequestHandler.cpp/hpp` | request and main function of request  |
 | `HttpResponse.cpp/hpp` | Builds and serializes HTTP response |
 | `CgiHandler.cpp/hpp` | Executes CGI scripts |
 
