@@ -6,7 +6,7 @@
 /*   By: oamairi <oamairi@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/04/30 18:32:24 by oamairi           #+#    #+#             */
-/*   Updated: 2026/05/09 16:56:32 by oamairi          ###   ########.fr       */
+/*   Updated: 2026/06/25 17:41:43 by oamairi          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -17,6 +17,7 @@
 #include <cstdlib>
 #include <fstream>
 #include <unistd.h>
+#include <algorithm>
 #include "Server.hpp"
 #include <sys/socket.h>
 #include "HttpRequest.hpp"
@@ -32,6 +33,9 @@ private:
 	std::set<int>								_bindedPorts;
 	std::map<int, std::vector<ServerConfig> >	_serverToConfig;
 	std::map<int, std::vector<ServerConfig> >	_clientFdToConfig;
+
+	static std::string toLowerStr(std::string s);
+	static std::string trim(const std::string &s);
 public:
 	EventLoop(const std::vector<ServerConfig> &configs);
 	void	run();

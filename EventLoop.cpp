@@ -6,7 +6,7 @@
 /*   By: oamairi <oamairi@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/04/30 18:32:40 by oamairi           #+#    #+#             */
-/*   Updated: 2026/06/25 15:12:08 by oamairi          ###   ########.fr       */
+/*   Updated: 2026/06/25 17:52:19 by oamairi          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -40,6 +40,25 @@ EventLoop::EventLoop(const std::vector<ServerConfig> &configs) : _run(true)
 			_serverToConfig[_servers.back().getFd()].push_back(configs[i]);
 		}
 	}
+}
+
+std::string	EventLoop::trim(const std::string &s) {
+	size_t start = 0;
+	while (start < s.size()
+		   && std::isspace(static_cast<unsigned char>(s[start])))
+		++start;
+
+	size_t end = s.size();
+	while (end > start && std::isspace(static_cast<unsigned char>(s[end - 1])))
+		--end;
+
+	return s.substr(start, end - start);
+}
+
+std::string	EventLoop::toLowerStr(std::string s) {
+	std::transform(
+		s.begin(), s.end(), s.begin(), static_cast<int (*)(int)>(std::tolower));
+	return s;
 }
 
 bool	EventLoop::isServerFd(int fd)
@@ -124,15 +143,15 @@ void	EventLoop::run()
 						_buffers[_fds[i].fd].append(buffer, read);
 						if (_buffers[_fds[i].fd].find("\r\n\r\n") != std::string::npos)
 						{
-							if (_buffers[_fds[i].fd].find("Content-Length: ") != std::string::npos)
+							if (toLowerStr(_buffers[_fds[i].fd]).find(("content-length:")) != std::string::npos)
 							{
-								int ligneContentLength = _buffers[_fds[i].fd].find("Content-Length: ");
-								int contentLength = std::atoi(_buffers[_fds[i].fd].substr(ligneContentLength + 16).c_str());
+								int ligneContentLength = trim(toLowerStr(_buffers[_fds[i].fd])).find("content-length:");
+								int contentLength = std::atoi(trim(toLowerStr(_buffers[_fds[i].fd])).substr(ligneContentLength + 15).c_str());
 								std::string body = _buffers[_fds[i].fd].substr(_buffers[_fds[i].fd].find("\r\n\r\n") + 4);
 								if (contentLength > 0 && (int) body.size() < contentLength)
 									continue;
 							}
-							else if (_buffers[_fds[i].fd].find("Transfer-Encoding: ") != std::string::npos)
+							else if (toLowerStr(_buffers[_fds[i].fd]).find("transfer-encoding:") != std::string::npos)
 							{
 								if (_buffers[_fds[i].fd].find("0\r\n\r\n") == std::string::npos)
 									continue;
@@ -143,7 +162,20 @@ void	EventLoop::run()
 							HttpResponse response;
 							response = handleRequest(request, _clientFdToConfig[_fds[i].fd]);
 							std::string raw = response.serialize();
-							send(_fds[i].fd, raw.c_str(), raw.size(), 0);
+							long long	total = 0;
+							long long	sent = 0;
+							while ((size_t) total < raw.size())
+							{
+								sent = send(_fds[i].fd, raw.c_str() + total, raw.size() - total, 0);
+								if (sent < 0)
+								{
+									if (errno == EAGAIN || errno == EWOULDBLOCK)
+										continue;
+									perror("send error");
+									break;
+								}
+								total = total + sent;
+							}
 							std::map<std::string, std::string> headers = response.getHeaders();
 							std::map<std::string, std::string>::iterator connIt = headers.find("connection");
 							if (connIt != headers.end() && connIt->second == "close")
