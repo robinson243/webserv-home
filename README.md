@@ -92,7 +92,10 @@ curl -X POST http://localhost:8080/upload -d "data=hello"
 
 fallocate -l 8M test_1gb.bin
 
-
+curl -X POST http://127.0.0.1:8080/upload \
+  --data-binary @test_3gb.bin \
+  -H "Content-Type: application/octet-stream" \
+  -v
 
 # DELETE request
 curl -X DELETE http://localhost:8080/upload/file.txt
