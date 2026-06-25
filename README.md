@@ -88,6 +88,12 @@ curl http://localhost:8080/
 # POST request
 curl -X POST http://localhost:8080/upload -d "data=hello"
 
+# POST resquest
+
+fallocate -l 8M test_1gb.bin
+
+
+
 # DELETE request
 curl -X DELETE http://localhost:8080/upload/file.txt
 
