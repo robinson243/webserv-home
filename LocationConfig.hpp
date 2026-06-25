@@ -6,7 +6,7 @@
 /*   By: ydembele <ydembele@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/04/14 12:17:03 by romukena          #+#    #+#             */
-/*   Updated: 2026/06/18 15:13:25 by ydembele         ###   ########.fr       */
+/*   Updated: 2026/06/25 17:50:40 by ydembele         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -113,8 +113,8 @@ class LocationConfig {
 
 std::ostream &operator<<(std::ostream &os, const LocationConfig &loc);
 
-void parseRoot(std::vector<Token>::iterator &it, std::vector<Token>::iterator end, LocationConfig &location);
-void parseAlias(std::vector<Token>::iterator &it, std::vector<Token>::iterator end, LocationConfig &location);
+//void parseRoot(std::vector<Token>::iterator &it, std::vector<Token>::iterator end, LocationConfig &location);
+//void parseAlias(std::vector<Token>::iterator &it, std::vector<Token>::iterator end, LocationConfig &location);
 void parseAutoindex(std::vector<Token>::iterator &it, std::vector<Token>::iterator end, LocationConfig &location);
 void	parseAllowMethods(std::vector<Token>::iterator &it, std::vector<Token>::iterator end, LocationConfig &location);
 void parseIndex(std::vector<Token>::iterator &it, std::vector<Token>::iterator end, LocationConfig &location);
