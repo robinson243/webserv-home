@@ -6,7 +6,7 @@
 /*   By: ydembele <ydembele@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/04/16 13:40:39 by ydembele          #+#    #+#             */
-/*   Updated: 2026/06/25 16:58:42 by ydembele         ###   ########.fr       */
+/*   Updated: 2026/06/25 17:40:18 by ydembele         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -242,14 +242,9 @@ void	parseErrorPage(std::vector<Token>::iterator &it, std::vector<Token>::iterat
 	++it;
 	if (it == end)
 		throw std::runtime_error("Error page: missing value");
-	try
-	{
-		code = atoi(it->value.c_str());
-	}
-	catch (...)
-	{
+	if (!isNumber(it->value) || it->in_quotes)
 		throw std::runtime_error("Error page: invalid code format");
-	}
+	code = atoi(it->value.c_str());
 	if (code < 100 || code > 599)
 		throw std::runtime_error("Error page: invalid code range [100-599]");
 	++it;
@@ -275,7 +270,7 @@ std::vector<std::string> findIndex(std::vector<Token>::iterator &it, std::vector
 	{
 		if (*it == ";" && !it->in_quotes)
 			break ;
-		if ((*it == "}" || *it == "{") && it->in_quotes)
+		if ((*it == "}" || *it == "{") && !it->in_quotes)
 			throw std::runtime_error("Index: brace in name forbidden");
 		index.push_back(it->value);
 		++it;
@@ -456,8 +451,7 @@ std::vector<Token>	tokenize(const std::string &data)
 				}
 			}
     	if (i == data.size())
-        throw std::runtime_error("Unclosed quote");
-			i++;
+        	throw std::runtime_error("Unclosed quote");
 			tokens.push_back(Token(value, true));
 			continue;
 		}

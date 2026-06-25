@@ -6,7 +6,7 @@
 /*   By: ydembele <ydembele@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/04/14 13:44:36 by romukena          #+#    #+#             */
-/*   Updated: 2026/06/25 14:40:46 by ydembele         ###   ########.fr       */
+/*   Updated: 2026/06/25 17:59:55 by ydembele         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -35,10 +35,10 @@ LocationConfig parseLocation(std::vector<Token>::iterator &it, std::vector<Token
 		throw std::runtime_error("Location path must start with '/'");
 	location.setPath(path);
 	++it;
-	if (it == end || *it != "{")
+	if (it == end || *it != "{" || it->in_quotes)
 		throw std::runtime_error("Location should start with '{'");
 	++it;
-	while (it != end && *it != "}")
+	while (it != end && (*it != "}" || it->in_quotes))
 	{
 		if (*it == "root")
 		{
@@ -186,13 +186,13 @@ void	parseAllowMethods(std::vector<Token>::iterator &it, std::vector<Token>::ite
 	++it;
 	if (it == end)
 		throw std::runtime_error("allowed_methods: missing value");
-	while (it != end && (*it != ";" && !it->in_quotes))
+	while (it != end && (*it != ";" || it->in_quotes))
 	{
 		if (*it == "}" || *it == "{")
 			throw std::runtime_error("allowed_methods: brace in name forbidden");
 		if (*it != "GET" && *it != "POST" && *it != "DELETE")
 			throw std::runtime_error("allowed_methods: invalid value " + it->value);
-		if (!location.isMethodAllowed(it->value))
+		if (allowmethod.find(it->value) != allowmethod.end())
 			throw std::runtime_error("allowed_methods: Multiple same method");
 		allowmethod.insert(it->value);
 		++it;
@@ -225,41 +225,41 @@ void parseAutoindex(std::vector<Token>::iterator &it, std::vector<Token>::iterat
 	location.sethasAutoindex(true);
 }
 
-void parseAlias(std::vector<std::string>::iterator &it, std::vector<std::string>::iterator end, LocationConfig &location)
-{
-	std::string alias = location.getAlias();
-	if (!alias.empty())
-		throw std::runtime_error("Mutiple definition of alias on location");
-	++it;
-	if (it == end)
-		throw std::runtime_error("Alias: missing autoindex");
-	if (*it == "}" || *it == "{" || *it == ";")
-		throw std::runtime_error("Alias: invalid value");
-	std::string s = *it;
-	++it;
-	if (it == end || *it != ";")
-		throw std::runtime_error("Alias: expected ';'");
-	++it;
-	location.setAlias(s);
-}
+// void parseAlias(std::vector<std::string>::iterator &it, std::vector<std::string>::iterator end, LocationConfig &location)
+// {
+// 	std::string alias = location.getAlias();
+// 	if (!alias.empty())
+// 		throw std::runtime_error("Mutiple definition of alias on location");
+// 	++it;
+// 	if (it == end)
+// 		throw std::runtime_error("Alias: missing autoindex");
+// 	if (*it == "}" || *it == "{" || *it == ";")
+// 		throw std::runtime_error("Alias: invalid value");
+// 	std::string s = *it;
+// 	++it;
+// 	if (it == end || *it != ";")
+// 		throw std::runtime_error("Alias: expected ';'");
+// 	++it;
+// 	location.setAlias(s);
+// }
 
-void parseRoot(std::vector<std::string>::iterator &it, std::vector<std::string>::iterator end, LocationConfig &location)
-{
-	std::string root = location.getRoot();
-	if (!root.empty())
-		throw std::runtime_error("Mutiple definition of root on location");
-	++it;
-	if (it == end)
-		throw std::runtime_error("Root: missing root");
-	if (*it == "}" || *it == "{" || *it == ";")
-		throw std::runtime_error("Root: invalid value");
-	std::string s = *it;
-	++it;
-	if (it == end || *it != ";")
-		throw std::runtime_error("Root: expected ';'");
-	++it;
-	location.setRoot(s);
-}
+// void parseRoot(std::vector<std::string>::iterator &it, std::vector<std::string>::iterator end, LocationConfig &location)
+// {
+// 	std::string root = location.getRoot();
+// 	if (!root.empty())
+// 		throw std::runtime_error("Mutiple definition of root on location");
+// 	++it;
+// 	if (it == end)
+// 		throw std::runtime_error("Root: missing root");
+// 	if (*it == "}" || *it == "{" || *it == ";")
+// 		throw std::runtime_error("Root: invalid value");
+// 	std::string s = *it;
+// 	++it;
+// 	if (it == end || *it != ";")
+// 		throw std::runtime_error("Root: expected ';'");
+// 	++it;
+// 	location.setRoot(s);
+// }
 
 // ── Getters ───────────────────────────────────────────────────
 bool LocationConfig::getAutoindex() const {
