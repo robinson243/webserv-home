@@ -582,21 +582,6 @@ HttpResponse Post(const HttpRequest &req, const ServerConfig &server) {
 	return response;
 }
 
-// void fillDefaultErrorBody(HttpResponse &resp) {
-// 	int code = resp.getCode();
-// 	// Simple pages
-// 	std::ostringstream html;
-// 	html << "<html><head><title>" << code << "</title></head>"
-// 		 << "<body><h1>" << code << "</h1></body></html>";
-// 	std::string body = html.str();
-
-// 	resp.addHeadersResponse("Content-Type", "text/html");
-// 	std::ostringstream len;
-// 	len << body.size();
-// 	resp.addHeadersResponse("Content-Length", len.str());
-// 	resp.addBodyResponse(body);
-// }
-
 const ServerConfig &selectServer(const std::vector<ServerConfig> &servers,
 								 const HttpRequest &req) {
 	std::map<std::string, std::string> headers = req.getHeaders();

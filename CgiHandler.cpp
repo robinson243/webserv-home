@@ -42,7 +42,7 @@ HttpResponse parseCgiOutput(const std::vector<unsigned char> &output) {
 	}
 
 	if (sepPos == std::string::npos)
-		return makeResponse(502); // pas de séparateur -> réponse CGI invalide
+		return makeResponse(502);
 
 	std::string headerSection = raw.substr(0, sepPos);
 	std::string bodySection = raw.substr(sepPos + sep.size());
@@ -73,7 +73,6 @@ HttpResponse parseCgiOutput(const std::vector<unsigned char> &output) {
 
 		// Header spécial CGI : Status -> code HTTP
 		if (key == "Status") {
-			// "Status: 200 OK" -> extraire 200
 			std::istringstream ss(value);
 			ss >> code;
 		} else {
