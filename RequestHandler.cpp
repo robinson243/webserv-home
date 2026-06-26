@@ -271,7 +271,10 @@ HttpResponse Get(const HttpRequest &req, const ServerConfig &server) {
 		resp.addHeadersResponse("location", loc.getUrl());
 		return resp;
 	}
-
+	const std::set<std::string> &methods = loc.getAllowMethods();
+	if (!methods.empty() && methods.find("GET") == methods.end()) {
+		return makeResponse(405);
+	}
 	std::vector<std::string> indexes = loc.getIndex();
 	if (indexes.empty())
 		indexes = server.getIndex();
@@ -442,45 +445,71 @@ std::string concatenateLocationPath(const LocationConfig &loc,
 HttpResponse Delete(const HttpRequest &req, const ServerConfig &server) {
 	struct stat st;
 	HttpResponse response;
+	const std::map<std::string, std::string> &r = req.getRequest();
+	std::map<std::string, std::string>::const_iterator it = r.find("method");
 
 	if (!req.getValid()) {
-		response = makeResponse(req.getCode());
-		return response;
+		return makeResponse(req.getCode());
 	}
+
+	if (it == r.end()) {
+		return makeResponse(400);
+	}
+
+	const std::string &method = it->second;
 
 	int valLocation = findLocation(server, req);
 	std::vector<LocationConfig> locations = server.getLocations();
 
 	if (locations.empty() || valLocation == -1) {
-		response = makeResponse(404);
-		return response;
+		return makeResponse(404);
 	}
 
 	const LocationConfig &loc = locations[valLocation];
 	std::string path = concatenateLocationPath(loc, req);
+	const std::set<std::string> &methods = loc.getAllowMethods();
+	std::string root = loc.getRoot();
+
+	if (methods.find(method) == methods.end()) {
+		return makeResponse(405);
+	}
 
 	if (path.empty()) {
-		response = makeResponse(403);
-		return response;
+		return makeResponse(403);
+	}
+
+	if (path.find("..") != std::string::npos) {
+		return makeResponse(403);
+	}
+
+	if (!root.empty()) {
+		if (path.size() < root.size()
+			|| path.compare(0, root.size(), root) != 0) {
+			return makeResponse(403);
+		}
+		if (path.size() > root.size() && root[root.size() - 1] != '/'
+			&& path[root.size()] != '/') {
+			return makeResponse(403);
+		}
 	}
 
 	if (stat(path.c_str(), &st) == -1) {
-		response = makeResponse(404);
-		return response;
+		return makeResponse(404);
 	}
 
 	if (S_ISDIR(st.st_mode)) {
-		response = makeResponse(403);
-		return response;
+		return makeResponse(403);
 	}
 
 	if (remove(path.c_str()) == 0) {
-		response = makeResponse(204);
-		return response;
+		return makeResponse(204);
 	}
 
-	response = makeResponse(403);
-	return response;
+	if (errno == EACCES || errno == EPERM) {
+		return makeResponse(403);
+	}
+
+	return makeResponse(500);
 }
 
 HttpResponse Post(const HttpRequest &req, const ServerConfig &server) {
@@ -494,6 +523,10 @@ HttpResponse Post(const HttpRequest &req, const ServerConfig &server) {
 	}
 
 	const LocationConfig &loc = locations[valLocation];
+	const std::set<std::string> &methods = loc.getAllowMethods();
+	if (!methods.empty() && methods.find("GET") == methods.end()) {
+		return makeResponse(405);
+	}
 
 	std::map<std::string, std::string> headers = req.getHeaders();
 

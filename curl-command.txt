@@ -1,0 +1,25 @@
+#CGI with GET
+
+curl -v http://127.0.0.1:8080/cgi-bin/echo.py
+curl -v http://127.0.0.1:8080/cgi-bin/env.py
+
+#CGI with POST
+
+curl -v -X POST http://127.0.0.1:8080/cgi-bin/echo.py \
+  -H "Content-Type: application/x-www-form-urlencoded" \
+  --data "message=hello&user=rob"
+
+curl -v -X POST http://127.0.0.1:8080/cgi-bin/env.py \
+  -H "Content-Type: application/x-www-form-urlencoded" \
+  --data "a=1&b=2"
+
+  
+# DELETE
+curl -i -X DELETE http://127.0.0.1:8080/delete_test/test.txt
+
+
+# POST
+
+curl -i -X POST http://127.0.0.1:8080/forms/post_test \
+  -H "Content-Type: text/plain" \
+  --data "hello post"
