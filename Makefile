@@ -22,4 +22,7 @@ fclean: clean
 
 re: fclean all
 
+eval :
+	bash script.sh
+
 .PHONY: all clean fclean re
