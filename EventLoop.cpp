@@ -6,7 +6,7 @@
 /*   By: oamairi <oamairi@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/04/30 18:32:40 by oamairi           #+#    #+#             */
-/*   Updated: 2026/06/25 17:52:19 by oamairi          ###   ########.fr       */
+/*   Updated: 2026/06/29 14:50:30 by oamairi          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -126,12 +126,7 @@ void	EventLoop::run()
 					if (read <= 0)
 					{
 						if (read < 0)
-						{
-							if (errno == ECONNRESET)
-								std::cout << "Connection reset by peer, fd : " << _fds[i].fd << "\n";
-							else
-								perror("recv error");
-						}
+							perror("recv error");
 						close(_fds[i].fd);
 						_buffers.erase(_fds[i].fd);
 						_clientFdToConfig.erase(_fds[i].fd);
@@ -169,16 +164,19 @@ void	EventLoop::run()
 								sent = send(_fds[i].fd, raw.c_str() + total, raw.size() - total, 0);
 								if (sent < 0)
 								{
-									if (errno == EAGAIN || errno == EWOULDBLOCK)
-										continue;
 									perror("send error");
+									close(_fds[i].fd);
+									_buffers.erase(_fds[i].fd);
+									_clientFdToConfig.erase(_fds[i].fd);
+									_fds.erase(_fds.begin() + i);
+									i--;
 									break;
 								}
 								total = total + sent;
 							}
 							std::map<std::string, std::string> headers = response.getHeaders();
 							std::map<std::string, std::string>::iterator connIt = headers.find("connection");
-							if (connIt != headers.end() && connIt->second == "close")
+							if (connIt != headers.end() && connIt->second == "close" && sent >= 0)
 							{
 								close(_fds[i].fd);
 								_buffers.erase(_fds[i].fd);
@@ -186,7 +184,7 @@ void	EventLoop::run()
 								_fds.erase(_fds.begin() + i);
 								i--;
 							}
-							else
+							else if (sent >= 0)
 								_buffers[_fds[i].fd].clear();
 						}
 					}
