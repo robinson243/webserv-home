@@ -60,16 +60,6 @@ HttpResponse makeResponse(int code) {
 
 	// 3xx Redirection
 	else if (code == 301)
-		body = "<html><body><h1>301 Moved Permanently</h1></body></html>";
-	else if (code == 302)
-		body = "<html><body><h1>302 Found</h1></body></html>";
-	else if (code == 303)
-		body = "<html><body><h1>303 See Other</h1></body></html>";
-	else if (code == 304)
-		body = "<html><body><h1>304 Not Modified</h1></body></html>";
-	else if (code == 307)
-		body = "<html><body><h1>307 Temporary Redirect</h1></body></html>";
-	else if (code == 308)
 		body = "<html><body><h1>308 Permanent Redirect</h1></body></html>";
 
 	// 4xx Client Errors
@@ -386,9 +376,9 @@ HttpResponse Get(const HttpRequest &req, const ServerConfig &server) {
 				return response;
 			}
 		}
-	}
-	response = makeResponse(404);
-	return response;
+	} else if (errno == EACCES || errno == EPERM)
+		return makeResponse(403);
+	return makeResponse(404);
 }
 
 std::string concatenateLocationPath(const LocationConfig &loc,
@@ -494,6 +484,8 @@ HttpResponse Delete(const HttpRequest &req, const ServerConfig &server) {
 	}
 
 	if (stat(path.c_str(), &st) == -1) {
+		if (errno == EACCES || errno == EPERM)
+			return makeResponse(403);
 		return makeResponse(404);
 	}
 
@@ -755,6 +747,5 @@ HttpResponse handleRequest(const HttpRequest &req,
 	} else {
 		response = makeResponse(501);
 	}
-
 	return response;
 }

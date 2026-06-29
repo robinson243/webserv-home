@@ -19,6 +19,7 @@ clean:
 
 fclean: clean
 	rm -f $(NAME)
+	rm -rf tests_www
 
 re: fclean all
 

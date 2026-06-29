@@ -151,6 +151,15 @@ HttpResponse handleCgi(const HttpRequest &req,
 		return makeResponse(500);
 	}
 
+	if (access(scriptPath.c_str(), F_OK) != 0) {
+		if (errno == EACCES || errno == EPERM)
+			return makeResponse(403);
+		return makeResponse(404);
+	}
+
+	if (access(scriptPath.c_str(), X_OK) != 0) {
+		return makeResponse(403);
+	}
 	std::string CONTENT_TYPE;
 	std::map<std::string, std::string>::const_iterator itCt =
 		req.getHeaders().find("content-type");
