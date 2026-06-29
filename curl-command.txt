@@ -15,11 +15,21 @@ curl -v -X POST http://127.0.0.1:8080/cgi-bin/env.py \
 
   
 # DELETE
-curl -i -X DELETE http://127.0.0.1:8080/delete_test/test.txt
+curl -i -X DELETE http://127.0.0.1:8080/delete_test/delete_me.txt
 
 
 # POST
 
-curl -i -X POST http://127.0.0.1:8080/forms/post_test \
+curl -i -X POST http://127.0.0.1:8080/upload/post_test \
   -H "Content-Type: text/plain" \
   --data "hello post"
+
+
+# GET
+
+curl -v http://127.0.0.1:8080/index.html
+
+
+# AUTOINDEX
+
+curl -i http://127.0.0.1:8080/autoindex
